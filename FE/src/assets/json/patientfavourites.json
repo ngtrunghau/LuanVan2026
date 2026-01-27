@@ -1,0 +1,137 @@
+[
+    {
+        "id" : 1,
+        "DoctorImg" : "avatar01.jpeg",
+        "DoctorName" : "Bác sĩ CKI Phương Thành",
+        "speciality" : "Hàm tháo lắp",
+        "Views": "(17)",
+        "Location": "Phòng Chuẩn Đoán",
+        "Available": "09712344242",
+        "Price": "$300 - $1000",
+        "class": "fas fa-star filled ms-1"
+    },
+
+    {
+        "id" : 2,
+        "DoctorImg" : "avatar02.jpeg",
+        "DoctorName" : "Bác sĩ CKI Tuấn Kiệt",
+        "speciality" : "Răng sứ thẩm mỹ",
+        "Views": "(35)",
+        "Location": "Phòng Chuẩn Đoán",
+        "Available": "09712344242",
+        "Price": "$50 - $300",
+        "class": "fas fa-star ms-1"
+    },
+
+    {
+        "id" : 3,
+        "DoctorImg" : "avatar03.jpeg",
+        "DoctorName" : "Bác sĩ CKI Việt Nhật",
+        "speciality" : "Răng sứ thẩm mỹ",
+        "Views": "(27)",
+        "Location": "Phòng Chuẩn Đoán",
+        "Available": "09712344242",
+        "Price": "$100 - $400",
+        "class": "fas fa-star ms-1"
+    },
+    {
+        "id" : 4,
+        "DoctorImg" : "avatar04.jpeg",
+        "DoctorName" : "Bác sĩ CKI Hồng Ngọc",
+        "speciality" : "Niềng răng",
+        "Views": "(4)",
+        "Location": "Phòng Chuẩn Đoán",
+        "Available": "09712344242",
+        "Price": "$150 - $250",
+        "class": "fas fa-star ms-1"
+    },
+    {
+        "id" : 5,
+        "DoctorImg" : "avatar01.jpeg",
+        "DoctorName" : "Bác sĩ CKI Phương Thành",
+        "speciality" : "Hàm tháo lắp",
+        "Views": "(66)",
+        "Location": "Phòng Chuẩn Đoán",
+        "Available": "09712344242",
+        "Price": "$50 - $700",
+        "class": "fas fa-star ms-1"
+    },
+    {
+        "id" : 6,
+        "DoctorImg" : "avatar02.jpeg",
+        "DoctorName" : "Bác sĩ CKI Tuấn Kiệt",
+        "speciality" : "Răng sứ thẩm mỹ",
+        "Views": "(52)",
+        "Location": "Phòng Chuẩn Đoán",
+        "Available": "09712344242",
+        "Price": "$100 - $500",
+        "class": "fas fa-star ms-1"
+    },
+    {
+        "id" : 7,
+        "DoctorImg" : "avatar03.jpeg",
+        "DoctorName" : "Bác sĩ CKI Việt Nhật",
+        "speciality" : "Răng sứ thẩm mỹ",
+        "Views": "(43)",
+        "Location": "Phòng Chuẩn Đoán",
+        "Available": "09712344242",
+        "Price": "$100 - $1000",
+        "class": "fas fa-star ms-1"
+    },
+    {
+        "id" : 8,
+        "DoctorImg" : "avatar04.jpeg",
+        "DoctorName" : "Bác sĩ CKI Hồng Ngọc",
+        "speciality" : "Niềng răng",
+        "Views": "(49)",
+        "Location": "Phòng Chuẩn Đoán",
+        "Available": "09712344242",
+        "Price": "$100 - $400",
+        "class": "fas fa-star ms-1"
+    },
+    {
+        "id" : 9,
+        "DoctorImg" : "avatar01.jpeg",
+        "DoctorName" : "Bác sĩ CKI Phương Thành",
+        "speciality" : "Hàm tháo lắp",
+        "Views": "(112)",
+        "Location": "Phòng Chuẩn Đoán",
+        "Available": "09712344242",
+        "Price": "$500 - $2500",
+        "class": "fas fa-star ms-1"
+    },
+    {
+        "id" : 10,
+        "DoctorImg" : "avatar02.jpeg",
+        "DoctorName" : "Bác sĩ CKI Tuấn Kiệt",
+        "speciality" : "Răng sứ thẩm mỹ",
+        "Views": "(65)",
+        "Location": "Phòng Chuẩn Đoán",
+        "Available": "09712344242",
+        "Price": "$75 - $250",
+        "class": "fas fa-star ms-1"
+    },
+    {
+        "id" : 11,
+        "DoctorImg" : "avatar03.jpeg",
+        "DoctorName" : "Bác sĩ CKI Việt Nhật",
+        "speciality" : "Răng sứ thẩm mỹ",
+        "Views": "(5)",
+        "Location": "Phòng Chuẩn Đoán",
+        "Available": "09712344242",
+        "Price": "$275 - $450",
+        "class": "fas fa-star"
+    },
+    {
+        "id" : 12,
+        "DoctorImg" : "avatar04.jpeg",
+        "DoctorName" : "Bác sĩ CKI Hồng Ngọc",
+        "speciality" : "Niềng răng",
+        "Views": "(5)",
+        "Location": "Phòng Chuẩn Đoán",
+        "Available": "09712344242",
+        "Price": "$150 - $350",
+        "class": "fas fa-star"
+    }
+]
+

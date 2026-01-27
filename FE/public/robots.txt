@@ -1,0 +1,8 @@
+# Cho phép tất cả các công cụ tìm kiếm truy cập vào tất cả các trang
+User-agent: *
+Allow: /
+
+# Ngừng truy cập vào các trang nhạy cảm
+Disallow: /admin/
+Disallow: /login/
+Disallow: /private/

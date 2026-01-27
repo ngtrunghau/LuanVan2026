@@ -1,0 +1,126 @@
+/***********************CSS TREE***********************/
+
+.selected-tree-item {
+    background: rgba(212, 160, 76, 0.76);
+    color: #000000;
+}
+
+.node-child .tree-item-node-parent .tree-item-node:not(:last-child) {
+    position: relative;
+    border-left: 1px dashed rgb(212, 160, 76);
+    border-radius: 0;
+}
+
+.node-child .tree-item-node-parent .tree-item-node:not(:last-child)::before {
+    content: "";
+    position: absolute;
+    top: 100%;
+    /* Extend below the actual element */
+    left: -1px;
+    /* Match the border-left width */
+    height: 1em;
+    /* Adjust the desired height */
+    border-left: 1px dashed rgb(212, 160, 76);
+}
+
+
+.tree-item-node:only-child .tree-view-item {
+    position: relative;
+    /* Needed to position the ::before pseudo-element */
+}
+
+
+
+.tree-item {
+    padding: 0.25em;
+}
+
+
+.chevron-right {
+    color: #F5E7B2;
+}
+
+
+.guide-line {
+    width: 1em;
+    border-top: 1px dashed rgb(212, 160, 76);
+}
+
+
+.d-flex {
+    display: flex;
+    align-items: center;
+}
+
+.align-items-center {
+    align-items: center;
+}
+
+
+
+.tiny_horizontal_margin {
+    margin-left: 2px;
+    margin-right: 2px;
+}
+
+.tree-item__checkbox-area {
+    display: flex;
+    align-items: center;
+}
+
+
+.nested {
+    margin-left: 47px !important;
+}
+
+.root {
+    margin-left: 30px !important;
+}
+
+.hide {
+    display: none;
+}
+
+.hide-guidelines {
+    border-left: none !important;
+}
+
+.chevron-right {
+    box-sizing: border-box;
+    position: relative;
+    display: block;
+    transform: scale(var(--ggs, 1));
+    width: 22px;
+    height: 22px;
+    border: 2px solid transparent;
+    border-radius: 100px;
+    transition: .2s;
+}
+
+
+
+.chevron-right::after {
+    content: "";
+    display: block;
+    box-sizing: border-box;
+    position: absolute;
+    width: 7px;
+    height: 7px;
+    border-bottom: 2px solid;
+    border-right: 2px solid;
+    transform: rotate(-45deg);
+    right: 6px;
+    top: 5px
+}
+
+/******************************************************/
+
+/**************************CSS*************************/
+
+textarea{
+    height: 100px !important;
+}
+
+.table-responsive{
+    white-space: unset
+}

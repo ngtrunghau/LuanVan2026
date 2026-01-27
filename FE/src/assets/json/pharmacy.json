@@ -1,0 +1,34 @@
+[
+    {
+        "Image" : "deals-01.png",
+        "Name" : "Bệnh tiểu đường"
+    },
+    {
+        "Image" : "deals-02.png",
+        "Name" : "Tim mạch"
+    },
+    {
+        "Image" : "deals-03.png",
+        "Name" : "Dạ dày"
+    },
+    {
+        "Image" : "deals-04.png",
+        "Name" : "Thảo dược"
+    },
+    {
+        "Image" : "deals-05.png",
+        "Name" : "Dược phẩm"
+    },
+    {
+        "Image" : "deals-06.png",
+        "Name" : "Thể trạng"
+    },
+    {
+        "Image" : "deals-07.png",
+        "Name" : "Mẹ và bé"
+    },
+    {
+        "Image" : "deals-08.png",
+        "Name" : "Thiết bị"
+    }
+]

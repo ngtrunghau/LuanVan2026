@@ -1,0 +1,57 @@
+[
+    {
+        "id": 1,
+        "Image": "dichvu.jpg",
+        "Title": "Cấp Ghép Implant",
+        "Doctor": "avatar01.jpeg",
+        "Name": "Phương Thành",
+        "price": "6.800.000/Trụ",
+        "describe": "Cấy ghép Implant là kỹ thuật trồng răng giả được thực hiện bằng cách cấy ghép một chân răng giả làm bằng titanium vào bên trong xương hàm ở vị trí răng đã mất để tạo ra các chân răng nhân tạo rồi gắn lên nó các chiếc răng giả cố định với mục đích thay thế răng đã bị mất đi."
+    },
+    {
+        "id": 2,
+        "Image": "dichvu01.jpg",
+        "Title": "Răng Sứ",
+        "Doctor": "avatar02.jpeg",
+        "Name": "Phương Thành",
+        "price": "$90",
+        "describe": "Bọc răng sứ là phương pháp thẩm mỹ dùng răng sứ làm từ chất liệu sứ hoặc kết hợp kim loại để chụp lên trên phần răng bị khiếm khuyết hay đang bị hư tổn nhờ đó mà mang lại hình dáng và màu sắc tự nhiên cho răng."
+    },
+    {
+        "id": 3,
+        "Image": "dichvu.jpg",
+        "Title": "Răng Tháo Lắp",
+        "Doctor": "avatar03.jpeg",
+        "Name": "Phương Thành",
+        "price": "$90",
+        "describe": "Nha khoa hiện đại đã và đang giúp cho nhiều bệnh nhân mất răng có được sự tự tin trong cuộc sống. Hàm răng giả tháo lắp cũng là giải pháp đáng cân nhắc cho những bệnh nhân này. Đây là phương pháp thường được sử dụng cho những người bị mất nhiều răng hoặc mất tất cả răng. "
+    },
+    {
+        "id": 4,
+        "Image": "dichvu01.jpg",
+        "Title": "Nhổ Răng Tiểu Phẩu",
+        "Doctor": "avatar04.jpeg",
+        "Name": "Phương Thành",
+        "price": "$90",
+        "describe": "Nhổ răng tiểu phẫu là phương pháp mổ lấy hoàn toàn răng ra ngoài mà các phương pháp thông thường khác không làm được. Những loại răng mọc lệch, bị tai biến, răng dính khớp, gãy chân răng,... sẽ được chỉ định làm thủ thuật nhổ răng tiểu phẫu."
+    },
+    {
+        "id": 5,
+        "Image": "dichvu.jpg",
+        "Title": "Cấp Ghép Implant",
+        "Doctor": "avatar01.jpeg",
+        "Name": "Phương Thành",
+        "price": "$90",
+        "describe": "Cấy ghép Implant là kỹ thuật trồng răng giả được thực hiện bằng cách cấy ghép một chân răng giả làm bằng titanium vào bên trong xương hàm ở vị trí răng đã mất để tạo ra các chân răng nhân tạo rồi gắn lên nó các chiếc răng giả cố định với mục đích thay thế răng đã bị mất đi."
+    },
+    {
+        "id": 6,
+        "Image": "dichvu01.jpg",
+        "Title": "Răng Sứ",
+        "Doctor": "avatar02.jpeg",
+        "Name": "Phương Thành",
+        "price": "$90",
+        "describe": "Bọc răng sứ là phương pháp thẩm mỹ dùng răng sứ làm từ chất liệu sứ hoặc kết hợp kim loại để chụp lên trên phần răng bị khiếm khuyết hay đang bị hư tổn nhờ đó mà mang lại hình dáng và màu sắc tự nhiên cho răng."
+
+    }
+]

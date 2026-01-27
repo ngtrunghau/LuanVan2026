@@ -1,0 +1,198 @@
+[
+    {
+        "id": 2,
+        "Image": "BS_NGOC.png",
+        "Badge": "1",
+        "Name": "BS CKI Võ Thị Phương Ngọc",
+        "Text": "Trưởng phòng tham mưu"
+    },
+    {
+        "id": 17,
+        "Image": "BS_TRUCANH.png",
+        "Badge": "1",
+        "Name": "BS CKI Huỳnh Như Trúc Anh",
+        "Text": "Tổ trưởng Khoa điều trị và thẩm mỹ răng - Thái Dương Hàm"
+    },
+    {
+        "id": 18,
+        "Image": "BS_MINHMAN.png",
+        "Badge": "1",
+        "Name": "BS Hà Minh Mẫn",
+        "Text": "Tổ phó Khoa điều trị và thẩm mỹ răng - Thái Dương Hàm"
+    },
+    {
+        "id": 19,
+        "Image": "BS_HANHNGUYEN.png",
+        "Badge": "1",
+        "Name": "BS LÊ NGUYỄN HẠNH NGUYÊN",
+        "Text": "Tổ trưởng Khoa Chỉnh nha - Răng trẻ em"
+    },
+    {
+        "id": 20,
+        "Image": "BS_MINHKHOA.png",
+        "Badge": "1",
+        "Name": "BS Bùi Minh Khoa",
+        "Text": "Tổ trưởng Khoa Phẩu thuật miệng - Cấy ghép Implant"
+    },
+    {
+        "id": 3,
+        "Image": "BS_TRUCANH.png",
+        "Badge": "2",
+        "Name": "BS CKI Huỳnh Như Trúc Anh",
+        "Text": "Tổ trưởng Khoa điều trị và thẩm mỹ răng - Thái Dương Hàm"
+    },
+    {
+        "id": 4,
+        "Image": "BS_MINHMAN.png",
+        "Badge": "2",
+        "Name": "BS Hà Minh Mẫn",
+        "Text": "Tổ phó Khoa điều trị và thẩm mỹ răng - Thái Dương Hàm"
+    },
+    {
+        "id": 5,
+        "Image": "BS_THIENNHAN.png",
+        "Badge": "2",
+        "Name": "BS Trần Thiện Nhân",
+        "Text": "BS ĐT Khoa điều trị và thẩm mỹ răng - Thái Dương Hàm"
+    },
+    {
+        "id": 6,
+        "Image": "BS_DIEP.png",
+        "Badge": "2",
+        "Name": "BS Phạm Ngọc Diệp",
+        "Text": "BS ĐT Khoa điều trị và thẩm mỹ răng - Thái Dương Hàm"
+    },
+    {
+        "id": 7,
+        "Image": "",
+        "Badge": "2",
+        "Name": "BS Ngô Thị Kiều Tiên",
+        "Text": "BS ĐT Khoa điều trị và thẩm mỹ răng - Thái Dương Hàm"
+    },
+    {
+        "id": 8,
+        "Image": "BS_HANHNGUYEN.png",
+        "Badge": "3",
+        "Name": "BS LÊ NGUYỄN HẠNH NGUYÊN",
+        "Text": "Tổ trưởng Khoa Chỉnh nha - Răng trẻ em"
+    },
+    {
+        "id": 9,
+        "Image": "BS_UYEN.png",
+        "Badge": "3",
+        "Name": "BS Vũ Hoàng Uyên",
+        "Text": "BS ĐT Khoa Chỉnh nha - Răng trẻ em"
+    },
+    {
+        "id": 10,
+        "Image": "BS_TRUCMAI.png",
+        "Badge": "3",
+        "Name": "BS Đào Thị Trúc Mai",
+        "Text": "BS ĐT Khoa Chỉnh nha - Răng trẻ em"
+    },
+    {
+        "id": 11,
+        "Image": "BS_MINHKHOA.png",
+        "Badge": "4",
+        "Name": "BS Bùi Minh Khoa",
+        "Text": "Tổ trưởng Khoa Phẩu thuật miệng - Cấy ghép Implant"
+    },
+    {
+        "id": 12,
+        "Image": "BS_VUONG.png",
+        "Badge": "5",
+        "Name": "BS Phan Minh Vương",
+        "Text": "Bác sĩ điều trị"
+    },
+    {
+        "id": 13,
+        "Image": "BS_YENNHI.png",
+        "Badge": "5",
+        "Name": "BS Nguyễn Thị Yến Nhi",
+        "Text": "Bác sĩ điều trị"
+    },
+    {
+        "id": 14,
+        "Image": "BS_NHATQUANG.png",
+        "Badge": "5",
+        "Name": "BS Nguyễn Hà Nhật Quang",
+        "Text": "Bác sĩ điều trị"
+    },
+    {
+        "id": 15,
+        "Image": "BS_GIANG.png",
+        "Badge": "5",
+        "Name": "BS Lê Ngọc Hương Giang",
+        "Text": "Bác sĩ điều trị"
+    },
+    {
+        "id": 16,
+        "Image": "BS_TRUNGNGUYEN.png",
+        "Badge": "5",
+        "Name": "BS Phạm Trung Nguyên",
+        "Text": "Bác sĩ điều trị"
+    },
+    {
+        "id": 21,
+        "Image": "BS_Thanh-remove.png",
+        "Badge": "6",
+        "Name": "Bác sĩ CKII Phạm Kim Thành",
+        "Text": "Tổng giám đốc"
+    },
+    {
+        "id": 22,
+        "Image": "BS_LAM.png",
+        "Badge": "6",
+        "Name": "BS Lưu Tuấn Lâm",
+        "Text": "Giám đốc"
+    },
+    {
+        "id": 23,
+        "Image": "BS_NGOC.png",
+        "Badge": "6",
+        "Name": "BS CKI Võ Thị Phương Ngọc",
+        "Text": "Trưởng phòng tham mưu"
+    },
+    {
+        "id": 24,
+        "Image": "BS_TRUCANH.png",
+        "Badge": "6",
+        "Name": "BS CKI Huỳnh Như Trúc Anh",
+        "Text": "Tổ trưởng Khoa điều trị và thẩm mỹ răng - Thái Dương Hàm"
+    },
+    {
+        "id": 25,
+        "Image": "BS_MINHMAN.png",
+        "Badge": "6",
+        "Name": "BS Hà Minh Mẫn",
+        "Text": "Tổ phó Khoa điều trị và thẩm mỹ răng - Thái Dương Hàm"
+    },
+    {
+        "id": 26,
+        "Image": "BS_HANHNGUYEN.png",
+        "Badge": "6",
+        "Name": "BS LÊ NGUYỄN HẠNH NGUYÊN",
+        "Text": "Tổ trưởng Khoa Chỉnh nha - Răng trẻ em"
+    },
+    {
+        "id": 27,
+        "Image": "BS_MINHKHOA.png",
+        "Badge": "6",
+        "Name": "BS Bùi Minh Khoa",
+        "Text": "Tổ trưởng Khoa Phẩu thuật miệng - Cấy ghép Implant"
+    },
+    {
+        "id": 28,
+        "Image": "BS_Thanh-remove.png",
+        "Badge": "7",
+        "Name": "Bác sĩ CKII Phạm Kim Thành",
+        "Text": "Tổng giám đốc"
+    },
+    {
+        "id": 29,
+        "Image": "",
+        "Badge": "7",
+        "Name": "BS Lưu Tuấn Lâm",
+        "Text": "Giám đốc"
+    }
+]

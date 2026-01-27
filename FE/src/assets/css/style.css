@@ -1,0 +1,170 @@
+
+
+.main-wrapper.home-ten .listing-card .listing-content .listing-details .listing-profile-details .listing-user .listing-profile-img .img-fluid{
+    height: 100% !important;
+}
+
+.main-wrapper.home-ten .our-doctor-section .module-border-wrap .listing-card .listing-img{
+    height: 215px;
+}
+
+.main-wrapper.home-ten .our-doctor-section .module-border-wrap .listing-card .listing-img img{
+    height: 100%;
+}
+
+.main-wrapper.home-ten .need-to-know-section .gallery-box-block .box-detail .img-how{
+    border: 1px solid #ccc;
+    border-radius: 35px;
+    height: 100%;
+}
+
+.main-wrapper.home-ten .need-to-know-section .gallery-box-block .box-detail{
+    box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+}
+
+.main-wrapper.home-ten .need-to-know-section.testimonial-section-ten .testimonial-card .testimonial-user-details .testimonial-user-img .img-fluid{
+    height: 100%;
+}
+
+.text-left{
+  text-align: left;
+}
+
+/*************SCROLL BAR***************/
+
+.scroll-bar{
+    overflow: scroll;
+    overflow-y: hidden;
+}
+
+
+
+/*******************GIÁ CỦA CHÚNG TÔI*********************/
+
+.listing-position{
+    position: absolute;
+    bottom: 0;
+    left: 10px;
+}
+
+.listing-position span{
+    font-size: 20px;
+    font-weight: bold;
+    background-color: #F5E7B2;
+    padding: 5px;
+    border-radius: 10px;
+}
+
+.listing-position span a{
+    color: #fff;
+}
+
+.listing-position span:hover a{
+    color: #fff !important;
+}
+
+.listing-describe p{
+    text-align: justify;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.listing-price{
+    padding: 5px;
+    background: #CCFBF1;
+}
+
+.listing-price span a{
+    color: #14B8A6;
+}
+
+
+/* VUE3-CAROUSEL */
+
+/* .carousel__slide {
+    padding: 5px;
+  }
+
+  .carousel__viewport {
+    perspective: 2000px;
+  }
+
+  .carousel__track {
+    transform-style: preserve-3d;
+  }
+
+  .carousel__slide--sliding {
+    transition: 0.5s;
+  }
+
+  .carousel__slide {
+    opacity: 0.9;
+    transform: rotateY(-20deg) scale(0.9);
+  }
+
+  .carousel__slide--active ~ .carousel__slide {
+    transform: rotateY(20deg) scale(0.9);
+  }
+
+  .carousel__slide--prev {
+    opacity: 1;
+    transform: rotateY(-10deg) scale(0.95);
+  }
+
+  .carousel__slide--next {
+    opacity: 1;
+    transform: rotateY(10deg) scale(0.95);
+  }
+
+  .carousel__slide--active {
+    opacity: 1;
+    transform: rotateY(0) scale(1.1);
+  } */
+
+/* THƯ VIỆN ẢNH SWIPER */
+
+#tranding .tranding-slider{
+  height: 52rem;
+  padding: 2rem 0;
+  position: relative;
+}
+
+@media (max-width: 500px){
+  #tranding .tranding-slider{
+    height: 45rem;
+  }
+}
+
+.tranding-slide{
+  width: 37rem;
+  height: 42rem;
+  position: relative;
+}
+
+@media (max-width: 500px){
+  .tranding-slider{
+    width: 28rem !important;
+    height: 36rem !important;
+  }
+  .tranding-slide .tranding-slide-img img{
+    width: 28rem !important;
+    height: 36rem !important;
+  }
+}
+
+.tranding-slide .tranding-slide-img img{
+  width: 37rem;
+  height: 42rem;
+  border-radius: 2rem;
+  object-fit: cover;
+}
+
+.tranding-slide-control{
+  position: relative;
+  bottom: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

@@ -1,0 +1,6 @@
+@badmintion_HostAddress = http://localhost:5286
+
+GET {{badmintion_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
