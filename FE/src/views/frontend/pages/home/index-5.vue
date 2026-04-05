@@ -1,6 +1,6 @@
 <template>
   <div class="main-wrapper home-ten" style="position: relative;">
-    <div class="social-icon">
+    <!-- <div class="social-icon">
       <a href="" target="_blank">
         <img src="@/assets/img/phuongthanh/icon-fb.png" alt="Image" class="icon-footer">
       </a>
@@ -13,7 +13,7 @@
       <a href="" target="_blank">
         <img src="@/assets/img/phuongthanh/icon-map.png" alt="Image" class="icon-footer" style="border-radius: 5px">
       </a>
-    </div>
+    </div> -->
     
     <layoutheader :class="{ 'header-space': showHeaderSpace }" ref="header" />
 
