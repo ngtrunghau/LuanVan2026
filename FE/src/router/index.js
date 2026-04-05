@@ -1,6 +1,6 @@
 import {createRouter, createWebHistory} from 'vue-router';
 
-import IndexFive from '@/views/frontend/pages/home/index-5.vue'
+import IndexFive from '@/views/frontend/pages/home/indexFive.vue'
 
 
 /****************** THUOC ******************/
@@ -20,6 +20,7 @@ import ThanhToanThanhCong from "@/views/frontend/pages/home/thanhtoanthanhcong.v
 import DonHang from "@/views/frontend/pages/home/donhang.vue";
 import DonHangChiTiet from "@/views/frontend/pages/home/donhangchitiet.vue";
 import ThongTinCaNhan from "@/views/frontend/pages/home/thongtincanhan.vue";
+import PatientSignup from "@/views/frontend/pages/home/patientSignup.vue";
 
 /**************** ADMIN  *************/
 
@@ -37,6 +38,12 @@ import QuanLyDiaChi from '@/views/admin/pages/diaChi/index.vue'
 import QuanLyKho from '@/views/admin/pages/kho/index.vue'
 import QuanLyDatHang from '@/views/admin/pages/datHang/index.vue'
 import ChiTietVanChuyen from '@/views/admin/pages/vanchuyen/index.vue'
+
+import AdminLogin from '@/views/admin/pages/authentication/login.vue'
+import AdminRegister from '@/views/admin/pages/authentication/register.vue'
+import AdminForgotPassword from '@/views/admin/pages/authentication/forgotPassword.vue'
+import AdminLockScreen from '@/views/admin/pages/authentication/lockScreen.vue'
+import AdminError404 from '@/views/admin/pages/404/error404.vue'
 
 
 import User from '@/views/admin/pages/user/index.vue'
@@ -61,8 +68,8 @@ const routes = [
         component: IndexFive,
         meta: {
             headerClass: 'header-ten',
-            title: 'ShopHBT - Hệ Thống Shop Cầu Lông!',
-            description: 'ShopHBT - Hệ Thống Shop Cầu Lông!'
+            title: 'ShopNTH - Hệ Thống Shop Cầu Lông!',
+            description: 'ShopNTH - Hệ Thống Shop Cầu Lông!'
        }
     },
     /**************** WEB  *************/
@@ -107,6 +114,11 @@ const routes = [
         component: DangKy,
     },
     {
+        path: '/patient-signup',
+        name: 'patient-signup',
+        component: PatientSignup,
+    },
+    {
         path: '/thanh-toan-thanh-cong',
         name: 'thanh-toan-thanh-cong',
         component: ThanhToanThanhCong,
@@ -126,12 +138,41 @@ const routes = [
         name: 'thong-tin-ca-nhan',
         component: ThongTinCaNhan
     },
+    {
+        path: '/error-404',
+        name: 'error-404',
+        component: AdminError404
+    },
 
     /**************** Admin  *************/
     {
         path: '/quan-tri/dashboard',
         name: 'quan-tri/dashboard',
         component: Dashboard
+    },
+    {
+        path: '/quan-tri/login',
+        name: 'admin/login',
+        alias: '/admin/login',
+        component: AdminLogin
+    },
+    {
+        path: '/quan-tri/register',
+        name: 'admin/register',
+        alias: '/admin/register',
+        component: AdminRegister
+    },
+    {
+        path: '/quan-tri/forgot-password',
+        name: 'admin/forgot-password',
+        alias: '/admin/forgot-password',
+        component: AdminForgotPassword
+    },
+    {
+        path: '/quan-tri/lock-screen',
+        name: 'admin/lock-screen',
+        alias: '/admin/lock-screen',
+        component: AdminLockScreen
     },
     {
         path: '/quan-tri/quan-ly-san-pham',
@@ -200,6 +241,12 @@ const routes = [
         component: ChiTietVanChuyen
     },
     {
+        path: '/quan-tri/error-404',
+        name: 'admin/error-404',
+        alias: '/admin/error-404',
+        component: AdminError404
+    },
+    {
         path: '/quan-tri/tai-khoan',
         name: 'quan-tri/tai-khoan',
         component: User
@@ -234,3 +281,4 @@ window.scrollTo({ top: 0, behavior: 'smooth' });
 // Continue with the navigation
 next();
 });
+

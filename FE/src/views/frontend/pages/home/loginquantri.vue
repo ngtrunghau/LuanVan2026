@@ -25,8 +25,8 @@
                     >
                   </div> -->
                   <div class="login-title text-center">
-                    <img src="@/assets/img/caulong/logo/logo_HBTShop-removebg.png" alt="shape-image" style="width: 100px"/>
-                    <h4>ShopHBT - Hệ thống shop Cầu lông</h4>
+                    <img src="@/assets/img/caulong/logo/logoNTH_removeBackground.png" alt="shape-image" style="width: 100px"/>
+                    <h4>ShopNTH - Hệ thống shop Cầu lông</h4>
                   </div>
                   <Form :validation-schema="schema" v-slot="{ errors }"   @submit="submitForm">
                     <div class="mb-3">
@@ -151,6 +151,9 @@ export default {
             console.log("LOG SUCCCESS ", res.data.accessToken)
             localStorage.setItem('auth-user', JSON.stringify(res.data));
             localStorage.setItem('token', res.data.accessToken);
+            if (window.axios) {
+              window.axios.defaults.headers.common.Authorization = `Bearer ${res.data.accessToken}`;
+            }
             // window.location.href="/admin"
             // this.$router.push("/quan-tri/profile");
             window.location.href = "/quan-tri/dashboard";
@@ -161,3 +164,5 @@ export default {
   },
 };
 </script>
+
+

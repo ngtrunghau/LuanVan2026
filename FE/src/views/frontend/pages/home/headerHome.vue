@@ -93,7 +93,7 @@
           <div class="brand-history-content">
             <h1>Bạn là một người đam mê cầu lông</h1>
             <p>
-              Với xuất phát từ những người chơi cầu lông và đam mê cầu lông, ShopHBT hiểu được sự cần thiết của dụng cụ cầu lông 
+              Với xuất phát từ những người chơi cầu lông và đam mê cầu lông, ShopNTH hiểu được sự cần thiết của dụng cụ cầu lông 
               chính hãng phục vụ cho người chơi sẽ mang tới những cảm giác thích thú nhất cho những người đam mê bộ môn này.
             </p>
             <p>
@@ -101,7 +101,7 @@
               Quý Khách có thể yên tâm lựa chọn cho mình những dụng cụ, phụ kiện phù hợp với trình độ và sở thích của 
               mình để cùng cháy với đam mê Cầu Lông.
             </p>
-            <p class="slogan">ShopHBT Đồng Hành Cùng Đam Mê!</p>
+            <p class="slogan">ShopNTH Đồng Hành Cùng Đam Mê!</p>
           </div>
         </div>
         <div class="col-lg-6 col-md-6 col-12">
@@ -192,3 +192,4 @@ export default {
   background-color: #F5E7B25d;
 }
 </style>
+

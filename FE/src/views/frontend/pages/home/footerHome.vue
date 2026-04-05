@@ -8,11 +8,11 @@
             <div class="" style="display: flex; justify-content: center; align-items: center;">
               <div class="footer-widget footer-about">
                 <div class="footer-logo">
-                  <img src="@/assets/img/caulong/logo/logo_HBTShop-removebg.png" alt="logo" />
+                  <img src="@/assets/img/caulong/logo/logoNTH_removeBackground.png" alt="logo" />
                 </div>
                 <div class="footer-about-content" v-if ="this.listFooter">
                   <p style="text-align: center; padding-bottom: 5px; font-size: 14px">
-                    ShopHBT - Hệ Thống Shop Cầu Lông
+                    ShopNTH - Hệ Thống Shop Cầu Lông
                   </p>
                 </div>
                 <!-- <div class="footer-about-content" style="text-align: center; color: #5B2F39;">
@@ -25,10 +25,10 @@
             <div class="">
               <div class="" style="font-size: 14px; line-height: 24px;">
                 <div class="" style="padding: 0;">
-                  <div class="name-footer">ShopHBT - Hệ Thống Shop Cầu Lông</div>
+                  <div class="name-footer">ShopNTH - Hệ Thống Shop Cầu Lông</div>
                   <div class="title-footer">
                    <i class="fa fa-solid fa-location-dot me-1" style="color: #BE8B43"></i>
-                    Số 123, QL30, phường 1, TP. Cao Lãnh, tỉnh Đồng Tháp
+                    Xã Khánh Lâm, Tỉnh Cà Mau
                   </div>
                   <div class="title-footer">
                    <i class="fa fa-solid fa-phone me-1" style="color: #BE8B43"></i>
@@ -99,3 +99,5 @@ export default {
 <style>
 
 </style>
+
+

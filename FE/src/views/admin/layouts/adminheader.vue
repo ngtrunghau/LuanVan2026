@@ -4,12 +4,12 @@
     <!-- Logo -->
     <div class="header-left">
       <router-link to="/quan-tri/tai-khoan" class="logo">
-        <img src="@/assets/img/caulong/logo/logo_HBTShop-removebg.png" alt="Logo" />
+        <img src="@/assets/img/caulong/logo/logoNTH_removeBackground.png" alt="Logo" />
       </router-link>
 
       <router-link to="/quan-tri/tai-khoan" class="logo logo-small">
         <img
-          src="@/assets/img/caulong/logo/logo_HBTShop-removebg.png"
+          src="@/assets/img/caulong/logo/logoNTH_removeBackground.png"
           alt="Logo"
           width="100"
           height="100"
@@ -150,6 +150,9 @@ export default {
       localStorage.removeItem("auth-user");
       localStorage.removeItem("token");
       localStorage.removeItem("user-token");
+      if (window.axios) {
+        delete window.axios.defaults.headers.common.Authorization;
+      }
       
       
       // 5. Chuyển hướng về trang chủ nếu đang ở trang khác
@@ -175,3 +178,4 @@ export default {
   },
 };
 </script>
+

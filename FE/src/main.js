@@ -82,6 +82,10 @@ import PharmacySidebar from '@/views/admin/layouts/adminsidebar.vue'
 import store from '@/state/store'
 import axios from "axios";
 window.axios  = axios;
+const savedToken = localStorage.getItem("token");
+if (savedToken) {
+    window.axios.defaults.headers.common.Authorization = `Bearer ${savedToken}`;
+}
 
 
 // Ckeditor

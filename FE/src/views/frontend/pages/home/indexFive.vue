@@ -167,8 +167,8 @@ export default {
     const schemaData = {
       "@context": "http://schema.org",
       "@type": "Product",
-      "name": "ShopHBT - Hệ Thống Shop Cầu Lông",
-      "description": "ShopHBT - Hệ Thống Shop Cầu Lông",
+      "name": "ShopNTH - Hệ Thống Shop Cầu Lông",
+      "description": "ShopNTH - Hệ Thống Shop Cầu Lông",
     };
 
     // Tạo thẻ <script> cho JSON-LD
@@ -256,4 +256,5 @@ export default {
   height: 150px !important;
 }
 </style>
+
 

@@ -127,7 +127,7 @@ export default {
       list: {},
       cart: [],
       showCartModal: false,
-      defaultImage: require('@/assets/img/caulong/logo/logo_HBTShop-removebg.png')
+      defaultImage: require('@/assets/img/caulong/logo/logoNTH_removeBackground.png')
     };
   },
 

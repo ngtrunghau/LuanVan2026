@@ -45,17 +45,19 @@ namespace badmintion.Authorization
             if (allowAnonymous)
                 return;
 
-            if (!ValidateToken(context.HttpContext.Request.Headers["Authorization"]))
+            var authHeader = context.HttpContext.Request.Headers["Authorization"].ToString();
+            if (!ValidateToken(authHeader))
             {
                 context.Result = new JsonResult(
                     new ResultMessageResponse()
                         .WithCode(DefaultCode.BEYOND_TIME)
                         .WithMessage("Hết thời gian truy cập vui lòng đăng nhập lại để xử lý tiếp!")
                 );
+                return;
             }
             var handler = new JwtSecurityTokenHandler();
-            var jsonToken = handler.ReadToken(context.HttpContext.Request.Headers["Authorization"]);
-            var tokenS = jsonToken as JwtSecurityToken;
+            var rawToken = authHeader.Replace("Bearer ", "").Trim();
+            var tokenS = handler.ReadJwtToken(rawToken);
             int unitRole = Int32.Parse(tokenS.Claims.First(x => x.Type == ListActionDefault.UnitRoleIdString)?.Value);
 
             if (unitRole == null)
@@ -65,6 +67,7 @@ namespace badmintion.Authorization
                         .WithCode(DefaultCode.BEYOND_TIME)
                         .WithMessage("Hết thời gian truy cập vui lòng đăng nhập lại để xử lý tiếp!")
                 );
+                return;
             }
                 
 

@@ -21,7 +21,11 @@ class ApiClient{
         try {
 
             let token = localStorage.getItem("token");
-            httpClient.defaults.headers.common['Authorization'] = `${token}`
+            if (token) {
+                httpClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            } else {
+                delete httpClient.defaults.headers.common['Authorization'];
+            }
             return httpClient;
         } catch (e)
         {

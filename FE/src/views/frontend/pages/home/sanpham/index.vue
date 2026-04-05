@@ -20,7 +20,7 @@
                     </div>
                     <div class="doctor-img1" v-else>
                       <img
-                        src="@/assets/img/caulong/logo/logo_default.png"
+                        src="@/assets/img/caulong/logo/logoNTH_removeBackground.png"
                         class="img-fluid"
                         alt="User Image"
                       />
@@ -172,3 +172,4 @@
     }
   };
 </script>
+

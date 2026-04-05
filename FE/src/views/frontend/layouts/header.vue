@@ -13,7 +13,7 @@
               </span>
             </a>
             <router-link to="/" class="logo">
-              <img src="@/assets/img/caulong/logo/logo_HBTShop-removebg.png" class="img-fluid" alt="Logo" />
+              <img src="@/assets/img/caulong/logo/logoNTH_removeBackground.png" class="img-fluid" alt="Logo" />
             </router-link>
 
             <div style="display: flex">
@@ -145,7 +145,7 @@
           <div class="main-menu-wrapper">
             <div class="menu-header">
               <router-link to="/" class="menu-logo">
-                <img src="@/assets/img/caulong/logo/logo_HBTShop-removebg.png" class="img-fluid" alt="Logo" />
+                <img src="@/assets/img/caulong/logo/logoNTH_removeBackground.png" class="img-fluid" alt="Logo" />
               </router-link>
               <a id="menu_close" class="menu-close" href="javascript:void(0);" @click="closeSidebar">
                 <i class="fas fa-times"></i>
@@ -174,8 +174,8 @@ export default {
       cartTotal: 0,
       cartCount: 0,
       showDropdown: false,
-      defaultAvatar: require('@/assets/img/caulong/logo/logo_HBTShop-removebg.png'),
-      defaultProductImage: require('@/assets/img/caulong/logo/logo_default.png')
+      defaultAvatar: require('@/assets/img/caulong/logo/logoNTH_removeBackground.png'),
+      defaultProductImage: require('@/assets/img/caulong/logo/logoNTH_removeBackground.png')
     };
   },
   mounted() {
@@ -271,6 +271,9 @@ export default {
       localStorage.removeItem("auth-user");
       localStorage.removeItem("token");
       localStorage.removeItem("user-token");
+      if (window.axios) {
+        delete window.axios.defaults.headers.common.Authorization;
+      }
       
       // 3. Reset dữ liệu trong component
       this.currentUserAuth = null;

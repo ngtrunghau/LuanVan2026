@@ -74,7 +74,7 @@
                   <!-- <div class="bank-info mt-2">
                     <p>Ngân hàng: <strong>Vietcombank</strong></p>
                     <p>Số tài khoản: <strong>123456789</strong></p>
-                    <p>Chủ tài khoản: <strong>Công ty TNHH HBT Shop</strong></p>
+                    <p>Chủ tài khoản: <strong>Công ty TNHH NTH Shop</strong></p>
                     <p>Nội dung chuyển khoản: <strong>MH{{ new Date().getTime() }}</strong></p>
                   </div> -->
                 </div>
@@ -265,7 +265,7 @@ export default {
       shippingFee: 30000,
       selectedAddress: null,
       selectedAddressOption: null, // Lưu object đầy đủ (dùng cho VueMultiselect)
-      defaultImage: require('@/assets/img/caulong/logo/logo_HBTShop-removebg.png')
+      defaultImage: require('@/assets/img/caulong/logo/logoNTH_removeBackground.png')
     }
   },
   setup() {
@@ -576,3 +576,4 @@ export default {
   margin-top: 10px;
 }
 </style>
+

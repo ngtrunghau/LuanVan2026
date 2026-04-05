@@ -24,7 +24,7 @@
                       </router-link>
                     </div>
                     <div class="login-title text-center">
-                      <img src="@/assets/img/caulong/logo/logo_HBTShop-removebg.png" alt="logo" style="width: 100px"/>
+                      <img src="@/assets/img/caulong/logo/logoNTH_removeBackground.png" alt="logo" style="width: 100px"/>
                       <h4>Đăng ký tài khoản</h4>
                     </div>
                     

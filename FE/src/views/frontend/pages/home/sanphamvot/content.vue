@@ -33,7 +33,7 @@
                 v-else
                 class="img-fluid"
                 alt="Product image"
-                src="@/assets/img/caulong/logo/logo_HBTShop-removebg.png"
+                src="@/assets/img/caulong/logo/logoNTH_removeBackground.png"
               />
             </router-link>
             <!-- <a href="javascript:void(0)" class="fav-btn" tabindex="-1">
@@ -203,4 +203,5 @@ export default {
   }
 };
 </script>
+
 

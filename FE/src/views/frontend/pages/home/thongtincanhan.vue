@@ -172,6 +172,10 @@ export default defineComponent ( {
   },
 
   methods: {
+    getAuthHeaders() {
+      const token = localStorage.getItem("token");
+      return token ? { Authorization: `Bearer ${token}` } : {};
+    },
 
     async handleInfo() {
         const authUser = JSON.parse(localStorage.getItem('auth-user'));
@@ -228,7 +232,9 @@ export default defineComponent ( {
     deleteImage() {
         if (this.model != null && this.model.icon != null) {
             //console.log("LOG this.model : ", this.model)
-            axios.post(`${process.env.VUE_APP_API_URL}file/delete/${this.model.icon.fileId}`).then((response) => {
+            axios.post(`${process.env.VUE_APP_API_URL}file/delete/${this.model.icon.fileId}`, null, {
+              headers: this.getAuthHeaders()
+            }).then((response) => {
                 this.model.icon = null;
                 // console.log('log model file remove', this.model.icon);
             }).catch((error) => {
@@ -242,7 +248,9 @@ export default defineComponent ( {
         const formData = new FormData()
         // formData.append('code', "ICON")
         formData.append('files', event.target.files[0])
-        axios.post(`${process.env.VUE_APP_API_URL}File/upload`,formData).then((response) => {
+        axios.post(`${process.env.VUE_APP_API_URL}File/upload`, formData, {
+          headers: this.getAuthHeaders()
+        }).then((response) => {
             let resultData = response.data
             if (response.data.code == 0){
             this.model.imageUrl = resultData.data

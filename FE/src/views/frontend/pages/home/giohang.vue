@@ -98,7 +98,7 @@ export default {
   data() {
     return {
       cart: [],
-      defaultImage: require('@/assets/img/caulong/logo/logo_HBTShop-removebg.png'),
+      defaultImage: require('@/assets/img/caulong/logo/logoNTH_removeBackground.png'),
       isLoggedIn: false
     };
   },
@@ -239,3 +239,4 @@ export default {
   border-color: #c11a2e;
 }
 </style>
+

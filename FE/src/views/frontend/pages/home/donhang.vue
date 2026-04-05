@@ -15,7 +15,7 @@
             Theo dõi đơn hàng
           </button>
         </li>
-        <li class="nav-item" role="presentation">
+        <li class="nav-item" role="presentation" v-if="showReviewsTab">
           <button 
             class="nav-link" 
             id="reviews-tab" 
@@ -81,11 +81,14 @@
                     </li>
                     <li class="list-group-item">
                       <strong>Trạng thái:</strong> 
-                      <span v-if="item.status == 1" class="badge bg-warning ms-2">
-                        Chưa thanh toán
+                      <span v-if="item.status == 1" class="badge bg-info ms-2">
+                        Đã đặt hàng
+                      </span>
+                      <span v-else-if="item.status == 2" class="badge bg-warning ms-2">
+                        Đang vận chuyển
                       </span>
                       <span v-else class="badge bg-success ms-2">
-                        Đã thanh toán
+                        Giao hàng thành công
                       </span>
                     </li>
                   </ul>
@@ -137,7 +140,7 @@
         </div>
         
         <!-- Tab Đánh giá sản phẩm -->
-        <div class="tab-pane fade" id="reviews" role="tabpanel">
+        <div class="tab-pane fade" id="reviews" role="tabpanel" v-if="showReviewsTab">
           <!-- <div v-if="reviewsLoading" class="text-center py-4">
             <div class="spinner-border text-primary" role="status">
               <span class="visually-hidden">Loading...</span>
@@ -297,6 +300,7 @@
       data() {
         return {
           activeTab: 'orders',
+          showReviewsTab: false,
           showDetails: false,
           list: [],
           currentPage: 1,

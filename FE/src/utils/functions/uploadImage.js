@@ -1,3 +1,8 @@
+const getAuthHeaders = () => {
+    const token = localStorage.getItem("token");
+    return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 export function uploadImage(loader)
 {
     return {
@@ -9,7 +14,9 @@ export function uploadImage(loader)
                   const data = new FormData();
                   data.append("files" , file); 
                 //  formData.append('code', "NEWS")
-                  axios.post(`${process.env.VUE_APP_API_URL}File/upload`,data).then((response) => {
+                                    axios.post(`${process.env.VUE_APP_API_URL}File/upload`, data, {
+                                        headers: getAuthHeaders()
+                                    }).then((response) => {
                     console.log("response.data.code ", response.data.code);
                     if (response.data != null && response.data.code == 0)
                         {
