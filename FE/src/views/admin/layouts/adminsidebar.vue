@@ -81,13 +81,13 @@
               <span>Quản lý tài khoản</span>
             </router-link>
           </li>
-          <li>
+          <li v-if="showAdminConfigMenus">
             <router-link to="/quan-tri/bo-dieu-khien" class="btn consult-btn" :class="{ 'active': isActive('/quan-tri/bo-dieu-khien') }">
               <i class="fa fa-star" style="font-size: 16px; display: flex; justify-content: center;"></i>
               <span>Quản lý bộ điều khiển</span>
             </router-link>
           </li>
-          <li>
+          <li v-if="showAdminConfigMenus">
             <router-link to="/quan-tri/chuc-nang" class="btn consult-btn" :class="{ 'active': isActive('/quan-tri/chuc-nang') }">
               <i class="fa fa-star" style="font-size: 16px; display: flex; justify-content: center;"></i>
               <span>Quản lý chức năng</span>
@@ -148,6 +148,8 @@ export default {
       tablesMenuData: false,
       multilevelMenuData: false,
       activeClass: "active",
+
+      showAdminConfigMenus: false,
 
       listMenu : [],
     };
