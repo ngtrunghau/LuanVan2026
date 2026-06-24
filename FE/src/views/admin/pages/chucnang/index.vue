@@ -1,7 +1,7 @@
 <template>
   <div class="main-Wrapper">
-    <pharmacyheader></pharmacyheader>
-    <pharmacysidebar></pharmacysidebar>
+    <adminheader></adminheader>
+    <adminsidebar></adminsidebar>
     <!-- Page Wrapper -->
     <div class="page-wrapper">
       <div class="content container-fluid">
@@ -316,182 +316,168 @@
       </div>
     </div>
   </div>
-  <pharmacymodel />
-  <pharmacydelete />
 </template>
-<script >
-
+<script setup>
+import { getCurrentInstance, onMounted, reactive, toRefs, watch } from "vue";
 import VueDatePicker from '@vuepic/vue-datepicker';
 import { chucNangModel } from "@/models/chucNangModel";
 import Treeselect from 'vue3-treeselect';
-import VueMultiselect from 'vue-multiselect'
+import VueMultiselect from 'vue-multiselect';
 import 'vue-multiselect/dist/vue-multiselect.css';
 import { Form, Field } from "vee-validate";
 import * as Yup from "yup";
 import { Modal } from 'bootstrap';
-import {notifyModel} from "@/models/notifyModel";
-
-export default {
-  components: {
-    VueDatePicker,
-    Treeselect,
-    VueMultiselect,
-    Form,
-    Field,
-  },
-  data() {
-    return {
-      title: "DANH SÁCH",
-      model: chucNangModel.baseJson(),
-      currentPage: 1,
-      numberOfElement: 1,
-      perPage: 10,
-      pageOptions: [5, 10, 25, 50, 100],
-      totalRows: 1,
-      sortBy: 'age',
-      sortDesc: false,
-      theModal: null,
-      isView: false,
-      list: [],
-      listRole: [],
-      listController: [],
-    };
-  },
-  name: "pharmacy/user",
-
-  created() {
-    this.getListRole();
-    this.getListController();
-    this.getData();
-  },
-  mounted() {
-    this.theModal = new Modal(document.getElementById('info_modal'));
-
-
-
-    this.$refs.ref_info_modal.addEventListener('hidden.bs.modal', event => {
-      this.model = chucNangModel.baseJson()
-      this.$refs.form.setFieldValue('unitRole', this.model.unitRole);
-      this.$refs.form.setFieldValue('controller', this.model.controllerId);
-    });
-    this.$refs.ref_delete.addEventListener('hidden.bs.modal', event => {
-      this.model = chucNangModel.baseJson()
-      this.$refs.form.setFieldValue('unitRole', this.model.unitRole);
-      this.$refs.form.setFieldValue('controller', this.model.controllerId);
-    });
-  },
-  setup() {
-    const schema = Yup.object().shape({
-      name: Yup.string().required("Tên không được bỏ trống !"),
-      router: Yup.string().required("Router không được bỏ trống !"),
-    });
-    return {
-      schema
-    };
-  },
-  watch: {
-    perPage: {
-      deep: true,
-      handler(val){
-        this.getData();
-      }
-    },
-    currentPage: {
-      deep: true,
-      handler(val){
-        this.getData();
-      }
+import { notifyModel } from "@/models/notifyModel";
+defineOptions({
+  name: "admin/page"
+});
+const {
+  proxy
+} = getCurrentInstance();
+const state = reactive({
+  title: "DANH SÁCH",
+  model: chucNangModel.baseJson(),
+  currentPage: 1,
+  numberOfElement: 1,
+  perPage: 10,
+  pageOptions: [5, 10, 25, 50, 100],
+  totalRows: 1,
+  sortBy: 'age',
+  sortDesc: false,
+  theModal: null,
+  isView: false,
+  list: [],
+  listRole: [],
+  listController: []
+});
+const {
+  title,
+  model,
+  currentPage,
+  numberOfElement,
+  perPage,
+  pageOptions,
+  totalRows,
+  sortBy,
+  sortDesc,
+  theModal,
+  isView,
+  list,
+  listRole,
+  listController
+} = toRefs(state);
+const schema = Yup.object().shape({
+  name: Yup.string().required("Tên không được bỏ trống !"),
+  router: Yup.string().required("Router không được bỏ trống !")
+});
+async function getData() {
+  let params = {
+    start: state.currentPage,
+    limit: state.perPage,
+    sortBy: state.sortBy
+  };
+  await proxy.$store.dispatch("chucNangStore/getPagingParams", params).then(res => {
+    if (res != null && res.code === 0) {
+      state.list = res.data.data;
+      state.totalRows = res.data.totalRows;
+      state.numberOfElement = res.data.data.length;
+      console.log("LIST USER: ", state.list);
     }
-  },
-
-  methods: {
-    async getData() {
-      let params = {
-        start: this.currentPage,
-        limit: this.perPage,
-        sortBy: this.sortBy,
+    proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+  });
+}
+async function getListRole() {
+  await proxy.$store.dispatch("unitRoleStore/getAll").then(res => {
+    if (res != null && res.code === 0) {
+      state.listRole = res.data || [];
+    }
+  });
+}
+async function getListController() {
+  await proxy.$store.dispatch("boDieuKhienStore/getAll").then(res => {
+    if (res != null && res.code === 0) {
+      state.listController = res.data || [];
+    }
+  });
+}
+async function handleGetInfo(id) {
+  await proxy.$store.dispatch("chucNangStore/getById", {
+    id: id
+  }).then(res => {
+    if (res != null && res.code === 0) {
+      state.model = chucNangModel.getJson(res.data);
+      state.model.unitRole = state.listRole.find(role => role.id === res.data.unitRoleId) || null;
+      state.model.controller = state.listController.find(controller => controller.id === res.data.controllerId) || null;
+      proxy.$refs.form.setFieldValue('unitRole', res.data.unitRoleId);
+      proxy.$refs.form.setFieldValue('controller', res.data.controllerId);
+    }
+  });
+}
+function handleShowDeleteModal(id) {
+  state.model.id = id;
+  proxy.showDeleteModal = true;
+}
+async function handleDelete() {
+  if (state.model.id != 0 && state.model.id != null && state.model.id) {
+    await proxy.$store.dispatch("chucNangStore/delete", {
+      'id': state.model.id
+    }).then(res => {
+      if (res != null && res.code === 0) {
+        proxy.showDeleteModal = false;
+        getData();
       }
-      await this.$store.dispatch("chucNangStore/getPagingParams", params ).then(res => {
-            if (res != null && res.code ===0) {
-              this.list = res.data.data
-              this.totalRows = res.data.totalRows
-              this.numberOfElement = res.data.data.length
-              console.log("LIST USER: ", this.list);
-            }
-            this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-      });
-    },
-    async getListRole(){
-      await  this.$store.dispatch("unitRoleStore/getAll").then((res) =>{
-            if (res != null && res.code ===0) {
-              this.listRole = res.data || [];
-            }
-      })
-    },
-    async getListController(){
-      await  this.$store.dispatch("boDieuKhienStore/getAll").then((res) =>{
-            if (res != null && res.code ===0) {
-              this.listController = res.data || [];
-            }
-      })
-    },
-    async handleGetInfo(id) {
-      await this.$store.dispatch("chucNangStore/getById", {id : id}).then((res) => {
-        if (res != null && res.code ===0) {
-          this.model = chucNangModel.getJson(res.data);
-          this.model.unitRole = this.listRole.find(role => role.id === res.data.unitRoleId) || null;
-          this.model.controller = this.listController.find(controller => controller.id === res.data.controllerId) || null;
-          this.$refs.form.setFieldValue('unitRole', res.data.unitRoleId);
-          this.$refs.form.setFieldValue('controller', res.data.controllerId);
-        }
-      });
-    },
-    handleShowDeleteModal(id) {
-      this.model.id = id;
-      this.showDeleteModal = true;
-    },
-    async handleDelete() {
-      if (this.model.id != 0 && this.model.id != null && this.model.id) {
-        await this.$store.dispatch("chucNangStore/delete", { 'id': this.model.id }).then((res) => {
-          if (res != null && res.code ===0) {
-            this.showDeleteModal = false;
-            this.getData();
-          }
-          this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-        });
-      }
-    },
-    async handleSubmit() {
-      this.model.controllerId = this.model.controller.id
-      this.model.unitRoleId = this.model.unitRole.id
-      if (
-          this.model.id != 0 &&
-          this.model.id != null &&
-          this.model.id
-      ) {
-        await this.$store.dispatch("chucNangStore/update", this.model).then((res) => {
-          if (res != null && res.code ===0) {
-            this.getData();
-            this.model= chucNangModel.baseJson()
-            this.theModal.hide();
-          }
-          this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-        });
-      } else {
-        await this.$store.dispatch("chucNangStore/create", this.model).then((res) => {
-          if (res != null && res.code ===0) {
-            this.getData();
-            this.model= chucNangModel.baseJson()
-            this.theModal.hide();
-          }
-          this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-        });
-
-      }
-
-    },
-
+      proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+    });
   }
-};
+}
+async function handleSubmit() {
+  state.model.controllerId = state.model.controller.id;
+  state.model.unitRoleId = state.model.unitRole.id;
+  if (state.model.id != 0 && state.model.id != null && state.model.id) {
+    await proxy.$store.dispatch("chucNangStore/update", state.model).then(res => {
+      if (res != null && res.code === 0) {
+        getData();
+        state.model = chucNangModel.baseJson();
+        state.theModal.hide();
+      }
+      proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+    });
+  } else {
+    await proxy.$store.dispatch("chucNangStore/create", state.model).then(res => {
+      if (res != null && res.code === 0) {
+        getData();
+        state.model = chucNangModel.baseJson();
+        state.theModal.hide();
+      }
+      proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+    });
+  }
+}
+watch(() => state.perPage, val => {
+  getData();
+}, {
+  deep: true
+});
+watch(() => state.currentPage, val => {
+  getData();
+}, {
+  deep: true
+});
+onMounted(() => {
+  state.theModal = new Modal(document.getElementById('info_modal'));
+  proxy.$refs.ref_info_modal.addEventListener('hidden.bs.modal', event => {
+    state.model = chucNangModel.baseJson();
+    proxy.$refs.form.setFieldValue('unitRole', state.model.unitRole);
+    proxy.$refs.form.setFieldValue('controller', state.model.controllerId);
+  });
+  proxy.$refs.ref_delete.addEventListener('hidden.bs.modal', event => {
+    state.model = chucNangModel.baseJson();
+    proxy.$refs.form.setFieldValue('unitRole', state.model.unitRole);
+    proxy.$refs.form.setFieldValue('controller', state.model.controllerId);
+  });
+});
+getListRole();
+getListController();
+getData();
 </script>
 

@@ -116,59 +116,54 @@
   </section>
 </template>
 
-<script>
+<script setup>
+import { getCurrentInstance, onMounted, reactive, toRefs, watch } from "vue";
 import { ref } from "vue";
 const currentDate = ref(new Date());
 import AOS from "aos";
 import "aos/dist/aos.css";
-import indexfivespecialities from "@/assets/json/indexfivespecialities.json";
-import { computed } from "vue";
-import * as Yup from "yup";
 import { Swiper, SwiperSlide } from 'swiper/vue';
 
+// Import Swiper styles
 // Import Swiper styles
 import 'swiper/css';
 import 'swiper/css/pagination';
 // import required modules
+// import required modules
 import { Navigation, Pagination, Autoplay } from 'swiper/modules';
-export default {
-  components: {
-    Swiper,
-    SwiperSlide,
-  },
-  data() {
-    return {
-      modules: [Navigation, Pagination, Autoplay],
-      startdate: currentDate,
-      indexfivespecialities: indexfivespecialities,
-      list: [],
-      url : `${process.env.VUE_APP_API_URL}files/view/`,
-      urlFile:`${process.env.VUE_APP_API_URL}files/view`,
-    };
-  },
-  props: {
-    header: { type : Object}
-  },
-  mounted() {
-    this.$nextTick(() => {
-      AOS.init();
-    });
-  },
-  watch:{
-    '$props':{
-      handler: function (val) {
-        this.list = val.header;
-      //  console.log("LOG WATCH LIST ", this.list )
-      },
-      deep: true
-    }
-  },
-  methods: {
-    submitForm() {
-      this.$router.push("/search-2");
-    },
-  },
-};
+const props = defineProps({
+  header: {
+    type: Object
+  }
+});
+const {
+  proxy
+} = getCurrentInstance();
+const state = reactive({
+  modules: [Navigation, Pagination, Autoplay],
+  startdate: currentDate,
+  list: [],
+  url: `${process.env.VUE_APP_API_URL}files/view/`,
+  urlFile: `${process.env.VUE_APP_API_URL}files/view`
+});
+const {
+  modules,
+  startdate,
+  list,
+  url,
+  urlFile
+} = toRefs(state);
+watch(() => proxy.$props, val => {
+  state.list = val.header;
+  //  console.log("LOG WATCH LIST ", this.list )
+}, {
+  deep: true
+});
+onMounted(() => {
+  proxy.$nextTick(() => {
+    AOS.init();
+  });
+});
 </script>
 <style>
 .carousel__pagination{

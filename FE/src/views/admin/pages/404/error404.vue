@@ -32,14 +32,16 @@
   </div>
 </template>
 
-<script>
-export default {
-  data() {
-    return {
-      title: "Error 404",
-      text: "Home",
-      text1: "Error 404",
-    };
-  },
-};
+<script setup>
+import { reactive, toRefs } from "vue";
+const state = reactive({
+  title: "Error 404",
+  text: "Home",
+  text1: "Error 404"
+});
+const {
+  title,
+  text,
+  text1
+} = toRefs(state);
 </script>

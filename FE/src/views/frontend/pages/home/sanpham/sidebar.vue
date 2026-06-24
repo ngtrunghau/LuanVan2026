@@ -112,212 +112,191 @@
   </div>
 </template>
 
-<script>
-export default {
-  props: {
-    sidebar: { 
-      type: Object,
-      default: () => ({})
-    }
-  },
-  
-  data() {
-    return {
-      quantityValue: 1,
-      list: {},
-      cart: [],
-      showCartModal: false,
-      defaultImage: require('@/assets/img/caulong/logo/logoNTH_removeBackground.png')
-    };
-  },
-
-  computed: {
-    totalPrice() {
-      return this.cart.reduce((total, item) => total + item.price * item.quantity, 0);
-    },
-    isLoggedIn() {
-      return !!localStorage.getItem("auth-user");
-    }
-  },
-
-  methods: {
-    formatCurrency(value) {
-      return value ? value.toLocaleString("vi-VN") + "đ" : "0đ";
-    },
-
-    addToCart() {
-      if (!this.list.id) {
-        this.showMessage('Sản phẩm không hợp lệ!', 'error');
-        return;
-      }
-
-      const cartData = this.getCartData();
-      const existingProduct = cartData.find(item => item.id === this.list.id);
-
-      if (existingProduct) {
-        existingProduct.quantity += this.quantityValue;
-      } else {
-        cartData.push({
-          id: this.list.id,
-          name: this.list.name,
-          price: this.list.price,
-          quantity: this.quantityValue,
-          imageUrl: this.list.imageUrl || this.defaultImage
-        });
-      }
-
-      this.updateCart(cartData);
-      this.showCartModal = true;
-    },
-
-    removeFromCart(index) {
-      const newCart = [...this.cart];
-      newCart.splice(index, 1);
-      this.updateCart(newCart);
-    },
-
-    updateQuantity(index, change) {
-      const newCart = [...this.cart];
-      const newQuantity = newCart[index].quantity + change;
-      
-      if (newQuantity > 0) {
-        newCart[index].quantity = newQuantity;
-        this.updateCart(newCart);
-      }
-    },
-
-    getCartData() {
-      if (this.isLoggedIn) {
-        const authUser = JSON.parse(localStorage.getItem("auth-user"));
-        return authUser?.cart || [];
-      }
-      return JSON.parse(localStorage.getItem("cart")) || [];
-      
-    },
-
-    updateCart(cartData) {
-      if (this.isLoggedIn) {
-        const authUser = JSON.parse(localStorage.getItem("auth-user"));
-        authUser.cart = cartData;
-        localStorage.setItem("auth-user", JSON.stringify(authUser));
-      }
-      
-      localStorage.setItem("cart", JSON.stringify(cartData));
-      this.cart = cartData;
-      window.dispatchEvent(new CustomEvent("cart-updated"));
-    },
-
-    proceedToCheckout() {
-      // Kiểm tra đăng nhập
-      const authUser = JSON.parse(localStorage.getItem("auth-user"));
-      
-      if (!authUser) {
-        // Chưa đăng nhập - chuyển hướng đến trang đăng nhập
-        // Lưu trữ URL hiện tại để redirect lại sau khi đăng nhập
-        localStorage.setItem("redirect-after-login", "/thanh-toan");
-        this.$router.push("/login");
-        
-        // Có thể thêm thông báo
-        this.showMessage("Vui lòng đăng nhập để thanh toán", "warning");
-        return;
-      }
-      
-      // Đã đăng nhập - chuyển đến trang thanh toán
-      this.$router.push("/thanh-toan");
-    },
-
-    loadCart() {
-      this.cart = this.getCartData();
-    },
-
-    loadProduct() {
-      if (Object.keys(this.sidebar).length > 0) {
-        this.list = { ...this.sidebar };
-      } else {
-        const storedProduct = JSON.parse(localStorage.getItem("currentProduct"));
-        if (storedProduct) this.list = { ...storedProduct };
-      }
-    },
-
-    syncCartOnLogin() {
-      const guestCart = JSON.parse(localStorage.getItem("cart")) || [];
-      if (guestCart.length > 0 && this.isLoggedIn) {
-        const authUser = JSON.parse(localStorage.getItem("auth-user"));
-        const mergedCart = this.mergeCarts(authUser?.cart || [], guestCart);
-        
-        authUser.cart = mergedCart;
-        localStorage.setItem("auth-user", JSON.stringify(authUser));
-        localStorage.removeItem("cart");
-        
-        this.cart = mergedCart;
-        this.showMessage('Đã đồng bộ giỏ hàng vào tài khoản', 'success');
-      }
-    },
-
-    mergeCarts(userCart, guestCart) {
-      const merged = [...userCart];
-      
-      guestCart.forEach(guestItem => {
-        const existingItem = merged.find(item => item.id === guestItem.id);
-        if (existingItem) {
-          existingItem.quantity += guestItem.quantity;
-        } else {
-          merged.push(guestItem);
-        }
-      });
-      
-      return merged;
-    },
-
-    checkAuthAndSync() {
-      if (this.isLoggedIn) {
-        const authUser = JSON.parse(localStorage.getItem("auth-user"));
-        if (!authUser.cart && JSON.parse(localStorage.getItem("cart"))) {
-          this.syncCartOnLogin();
-        }
-      }
-    },
-
-    showMessage(message, type = 'success') {
-      // Sử dụng hệ thống thông báo của bạn
-      console[type === 'success' ? 'log' : 'error'](message);
-      
-      // Hoặc nếu dùng Vuex
-      if (this.$store && this.$store.dispatch) {
-        this.$store.dispatch("snackBarStore/addNotify", {
-          message: message,
-          variant: type
-        });
-      }
-    }
-  },
-
-  watch: {
-    sidebar: {
-      handler(newVal) {
-        if (newVal && Object.keys(newVal).length > 0) {
-          this.list = { ...newVal };
-          localStorage.setItem("currentProduct", JSON.stringify(newVal));
-        }
-      },
-      immediate: true,
-      deep: true
-    }
-  },
-
-  mounted() {
-    this.loadProduct();
-    this.loadCart();
-    window.addEventListener('storage', this.loadCart);
-    window.$cartComponent = this;
-    this.checkAuthAndSync();
-  },
-
-  beforeUnmount() {
-    window.removeEventListener('storage', this.loadCart);
-    delete window.$cartComponent;
+<script setup>
+import { computed, getCurrentInstance, onBeforeUnmount, onMounted, reactive, toRefs, watch } from "vue";
+const props = defineProps({
+  sidebar: {
+    type: Object,
+    default: () => ({})
   }
-};
+});
+const {
+  proxy
+} = getCurrentInstance();
+const state = reactive({
+  quantityValue: 1,
+  list: {},
+  cart: [],
+  showCartModal: false,
+  defaultImage: require('@/assets/img/caulong/logo/logoNTH_removeBackground.png')
+});
+const {
+  quantityValue,
+  list,
+  cart,
+  showCartModal,
+  defaultImage
+} = toRefs(state);
+function formatCurrency(value) {
+  return value ? value.toLocaleString("vi-VN") + "đ" : "0đ";
+}
+function addToCart() {
+  if (!state.list.id) {
+    showMessage('Sản phẩm không hợp lệ!', 'error');
+    return;
+  }
+  const cartData = getCartData();
+  const existingProduct = cartData.find(item => item.id === state.list.id);
+  if (existingProduct) {
+    existingProduct.quantity += state.quantityValue;
+  } else {
+    cartData.push({
+      id: state.list.id,
+      name: state.list.name,
+      price: state.list.price,
+      quantity: state.quantityValue,
+      imageUrl: state.list.imageUrl || state.defaultImage
+    });
+  }
+  updateCart(cartData);
+  state.showCartModal = true;
+}
+function removeFromCart(index) {
+  const newCart = [...state.cart];
+  newCart.splice(index, 1);
+  updateCart(newCart);
+}
+function updateQuantity(index, change) {
+  const newCart = [...state.cart];
+  const newQuantity = newCart[index].quantity + change;
+  if (newQuantity > 0) {
+    newCart[index].quantity = newQuantity;
+    updateCart(newCart);
+  }
+}
+function getCartData() {
+  if (isLoggedIn.value) {
+    const authUser = JSON.parse(localStorage.getItem("auth-user"));
+    return authUser?.cart || [];
+  }
+  return JSON.parse(localStorage.getItem("cart")) || [];
+}
+function updateCart(cartData) {
+  if (isLoggedIn.value) {
+    const authUser = JSON.parse(localStorage.getItem("auth-user"));
+    authUser.cart = cartData;
+    localStorage.setItem("auth-user", JSON.stringify(authUser));
+  }
+  localStorage.setItem("cart", JSON.stringify(cartData));
+  state.cart = cartData;
+  window.dispatchEvent(new CustomEvent("cart-updated"));
+}
+function proceedToCheckout() {
+  // Kiểm tra đăng nhập
+  const authUser = JSON.parse(localStorage.getItem("auth-user"));
+  if (!authUser) {
+    // Chưa đăng nhập - chuyển hướng đến trang đăng nhập
+    // Lưu trữ URL hiện tại để redirect lại sau khi đăng nhập
+    localStorage.setItem("redirect-after-login", "/thanh-toan");
+    proxy.$router.push("/login");
+
+    // Có thể thêm thông báo
+    showMessage("Vui lòng đăng nhập để thanh toán", "warning");
+    return;
+  }
+
+  // Đã đăng nhập - chuyển đến trang thanh toán
+  // Đã đăng nhập - chuyển đến trang thanh toán
+  proxy.$router.push("/thanh-toan");
+}
+function loadCart() {
+  state.cart = getCartData();
+}
+function loadProduct() {
+  if (Object.keys(props.sidebar).length > 0) {
+    state.list = {
+      ...props.sidebar
+    };
+  } else {
+    const storedProduct = JSON.parse(localStorage.getItem("currentProduct"));
+    if (storedProduct) state.list = {
+      ...storedProduct
+    };
+  }
+}
+function syncCartOnLogin() {
+  const guestCart = JSON.parse(localStorage.getItem("cart")) || [];
+  if (guestCart.length > 0 && isLoggedIn.value) {
+    const authUser = JSON.parse(localStorage.getItem("auth-user"));
+    const mergedCart = mergeCarts(authUser?.cart || [], guestCart);
+    authUser.cart = mergedCart;
+    localStorage.setItem("auth-user", JSON.stringify(authUser));
+    localStorage.removeItem("cart");
+    state.cart = mergedCart;
+    showMessage('Đã đồng bộ giỏ hàng vào tài khoản', 'success');
+  }
+}
+function mergeCarts(userCart, guestCart) {
+  const merged = [...userCart];
+  guestCart.forEach(guestItem => {
+    const existingItem = merged.find(item => item.id === guestItem.id);
+    if (existingItem) {
+      existingItem.quantity += guestItem.quantity;
+    } else {
+      merged.push(guestItem);
+    }
+  });
+  return merged;
+}
+function checkAuthAndSync() {
+  if (isLoggedIn.value) {
+    const authUser = JSON.parse(localStorage.getItem("auth-user"));
+    if (!authUser.cart && JSON.parse(localStorage.getItem("cart"))) {
+      syncCartOnLogin();
+    }
+  }
+}
+function showMessage(message, type = 'success') {
+  // Sử dụng hệ thống thông báo của bạn
+  console[type === 'success' ? 'log' : 'error'](message);
+
+  // Hoặc nếu dùng Vuex
+  // Hoặc nếu dùng Vuex
+  if (proxy.$store && proxy.$store.dispatch) {
+    proxy.$store.dispatch("snackBarStore/addNotify", {
+      message: message,
+      variant: type
+    });
+  }
+}
+const totalPrice = computed(() => {
+  return state.cart.reduce((total, item) => total + item.price * item.quantity, 0);
+});
+const isLoggedIn = computed(() => {
+  return !!localStorage.getItem("auth-user");
+});
+watch(() => props.sidebar, newVal => {
+  if (newVal && Object.keys(newVal).length > 0) {
+    state.list = {
+      ...newVal
+    };
+    localStorage.setItem("currentProduct", JSON.stringify(newVal));
+  }
+}, {
+  immediate: true,
+  deep: true
+});
+onMounted(() => {
+  loadProduct();
+  loadCart();
+  window.addEventListener('storage', loadCart);
+  window.$cartComponent = proxy;
+  checkAuthAndSync();
+});
+onBeforeUnmount(() => {
+  window.removeEventListener('storage', loadCart);
+  delete window.$cartComponent;
+});
 </script>
 
 

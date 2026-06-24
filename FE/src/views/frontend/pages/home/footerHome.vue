@@ -62,38 +62,31 @@
   </footer>
   <!-- /Footer -->
 </template>
-<script>
+<script setup>
+import { getCurrentInstance, onMounted, reactive, toRefs } from "vue";
 import AOS from "aos";
 import "aos/dist/aos.css";
-export default {
-  data() {
-    return {
-      url : `${process.env.VUE_APP_API_URL}files/view/`,
-      urlFile:`${process.env.VUE_APP_API_URL}files/view`,
-    };
-  },
-  props: {
-    footer: { type : Object}
-  },
-  mounted() {
-    this.$nextTick(() => {
-      AOS.init();
-    });
-  },
-  created() {
-  },
-  // watch:{
-  //   '$props':{
-  //     handler: function (val) {
-  //       this.listFooter = val.footer;
-  //     },
-  //     deep: true
-  //   }
-  // },
-  methods: {
-  },
-};
-
+const props = defineProps({
+  footer: {
+    type: Object
+  }
+});
+const {
+  proxy
+} = getCurrentInstance();
+const state = reactive({
+  url: `${process.env.VUE_APP_API_URL}files/view/`,
+  urlFile: `${process.env.VUE_APP_API_URL}files/view`
+});
+const {
+  url,
+  urlFile
+} = toRefs(state);
+onMounted(() => {
+  proxy.$nextTick(() => {
+    AOS.init();
+  });
+});
 </script>
 
 <style>

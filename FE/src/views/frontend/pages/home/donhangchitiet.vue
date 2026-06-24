@@ -197,77 +197,85 @@
   <footerHome></footerHome>
 </template>
 
-<script>
-  export default {
-    name: 'OrderTracking',
-    data() {
-      return {
-        showDetails: false,
-        list: [],
-        model: [],
-        expandedOrders: {}, // Lưu trạng thái expand/collapse của từng đơn hàng (key: orderId, value: boolean)
-      }
-    },
-    created() {
-      this.getData();
-    },
-    methods: {
-      async getData() {
-        const authUser = JSON.parse(localStorage.getItem('auth-user'));
-        let params = {
-          id: authUser.id
-        }
-        await this.$store.dispatch("shippingStore/getByIdCustomer", params).then(res => {
-          if (res != null && res.code === 0) {
-            this.list = res.data;
-            console.log("LIST: ", this.list);
-          }
-        });
-      },
-      async handleGetInfo(id) {
-        await this.$store.dispatch("shippingStore/getByIdOrder", {id : id}).then((res) => {
-          if (res != null && res.code ===0) {
-            this.model = res.data[0]
-            console.log("MODEL: ", this.model);
-            
-          }
-        });
-      },
-      toggleDetails(index) {
-        this.orders[index].showDetails = !this.orders[index].showDetails;
-      },
-      formatCurrency(value) {
-        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
-      },
-      calculateSubTotal(orderItems) {
-        if (!orderItems) return 0;
-        return orderItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-      },
-      toggleOrderDetails(orderId) {
-        // Đảo trạng thái (nếu không có key thì mặc định là true)
-        this.expandedOrders = {
-          ...this.expandedOrders,
-          [orderId]: !this.expandedOrders[orderId]
-        };
-      },
-      isOrderExpanded(orderId) {
-        // Kiểm tra trạng thái (mặc định false nếu không có key)
-        return !!this.expandedOrders[orderId];
-      },
-      formatDate(isoString) {
-        const date = new Date(isoString);
-        return new Intl.DateTimeFormat('vi-VN', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false // 24h format
-        }).format(date);
-      }
-    },
-  }
-  </script>
+<script setup>
+import { getCurrentInstance, reactive, toRefs } from "vue";
+defineOptions({
+  name: 'OrderTracking'
+});
+const {
+  proxy
+} = getCurrentInstance();
+const state = reactive({
+  showDetails: false,
+  list: [],
+  model: [],
+  expandedOrders: {} // Lưu trạng thái expand/collapse của từng đơn hàng (key: orderId, value: boolean)
+});
+const {
+  showDetails,
+  list,
+  model,
+  expandedOrders
+} = toRefs(state);
+async function getData() {
+  const authUser = JSON.parse(localStorage.getItem('auth-user'));
+  let params = {
+    id: authUser.id
+  };
+  await proxy.$store.dispatch("shippingStore/getByIdCustomer", params).then(res => {
+    if (res != null && res.code === 0) {
+      state.list = res.data;
+      console.log("LIST: ", state.list);
+    }
+  });
+}
+async function handleGetInfo(id) {
+  await proxy.$store.dispatch("shippingStore/getByIdOrder", {
+    id: id
+  }).then(res => {
+    if (res != null && res.code === 0) {
+      state.model = res.data[0];
+      console.log("MODEL: ", state.model);
+    }
+  });
+}
+function toggleDetails(index) {
+  proxy.orders[index].showDetails = !proxy.orders[index].showDetails;
+}
+function formatCurrency(value) {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND'
+  }).format(value);
+}
+function calculateSubTotal(orderItems) {
+  if (!orderItems) return 0;
+  return orderItems.reduce((total, item) => total + item.price * item.quantity, 0);
+}
+function toggleOrderDetails(orderId) {
+  // Đảo trạng thái (nếu không có key thì mặc định là true)
+  state.expandedOrders = {
+    ...state.expandedOrders,
+    [orderId]: !state.expandedOrders[orderId]
+  };
+}
+function isOrderExpanded(orderId) {
+  // Kiểm tra trạng thái (mặc định false nếu không có key)
+  return !!state.expandedOrders[orderId];
+}
+function formatDate(isoString) {
+  const date = new Date(isoString);
+  return new Intl.DateTimeFormat('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false // 24h format
+  }).format(date);
+}
+getData();
+</script>
 
 <style scoped>
 .timeline {

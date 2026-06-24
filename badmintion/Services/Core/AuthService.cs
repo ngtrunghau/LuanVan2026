@@ -19,18 +19,21 @@ namespace badmintion.Services.Core
         private readonly IUserService _userService;
         private readonly BadmintionNlContext _context;
         private readonly IRefreshTokenService _refreshTokenService;
+        private readonly IPasswordService _passwordService;
         private readonly JwtSettings _jwtSettings;
         public AuthService(
             BadmintionNlContext context, 
             IHttpContextAccessor contextAccessor,
             IRefreshTokenService refreshTokenService,
             IOptions<JwtSettings> jwtSettings, 
-            IUserService userService)
+            IUserService userService,
+            IPasswordService passwordService)
         {
             _context = context;
             _refreshTokenService = refreshTokenService;
             _jwtSettings = jwtSettings.Value;
             _userService = userService;
+            _passwordService = passwordService;
         }
 
         public async Task<dynamic> Login(AuthRequest model)
@@ -44,11 +47,17 @@ namespace badmintion.Services.Core
                 if (!validationResult.IsValid)
                     throw new ResponseMessageException().WithValidationResult(validationResult);
 
-                var login = await _context.Users.FirstOrDefaultAsync(x => x.UserName == model.Username && x.Password == model.Password && x.IsDeleted == false);
-                if (login == null)
+                var login = await _context.Users.FirstOrDefaultAsync(
+                    x => x.UserName == model.Username && x.IsDeleted == false);
+                if (login == null || !_passwordService.Verify(model.Password, login.Password))
                 {
                     throw new ResponseMessageException().WithException(DefaultCode.DATA_NOT_FOUND);
 
+                }
+                if (_passwordService.NeedsRehash(login.Password))
+                {
+                    login.Password = _passwordService.Hash(model.Password);
+                    await _context.SaveChangesAsync();
                 }
                 if (login != null)
                 {
@@ -98,11 +107,18 @@ namespace badmintion.Services.Core
             if (!validationResult.IsValid)
                 throw new ResponseMessageException().WithValidationResult(validationResult);
 
-            var login = await _context.Users.Include(x => x.UnitRole).FirstOrDefaultAsync(x => x.UserName == model.Username && x.Password == model.Password && x.IsDeleted == false);
-            if (login == null)
+            var login = await _context.Users
+                .Include(x => x.UnitRole)
+                .FirstOrDefaultAsync(x => x.UserName == model.Username && x.IsDeleted == false);
+            if (login == null || !_passwordService.Verify(model.Password, login.Password))
             {
                 throw new ResponseMessageException().WithException(DefaultCode.DATA_NOT_FOUND);
 
+            }
+            if (_passwordService.NeedsRehash(login.Password))
+            {
+                login.Password = _passwordService.Hash(model.Password);
+                await _context.SaveChangesAsync();
             }
             var loginUser = await _context.Logins.Where(x => x.IsDeleted == false && x.UserId == login.Id).OrderByDescending(x => x.Date).FirstOrDefaultAsync();
             //var check =  _refreshTokenService.ValidateJwtToken(loginUser.AccessToken);
@@ -136,7 +152,7 @@ namespace badmintion.Services.Core
             {
                 Name = user.Name,
                 UserName = user.UserName,
-                Password = user.Password,
+                Password = null,
                 IsDeleted = user.IsDeleted,
                 Id = user.Id,
                 UnitRoleId = user.UnitRoleId,

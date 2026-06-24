@@ -11,11 +11,14 @@ public partial class User
 
     public string? UserName { get; set; }
 
+    [System.Text.Json.Serialization.JsonIgnore]
     public string? Password { get; set; }
 
     public bool? IsDeleted { get; set; }
 
     public int? UnitRoleId { get; set; }
+
+    public DateTime? PasswordChangedAt { get; set; }
 
     public virtual ICollection<Login> Logins { get; set; } = new List<Login>();
 

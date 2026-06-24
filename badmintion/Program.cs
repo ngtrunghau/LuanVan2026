@@ -2,12 +2,10 @@
 using badmintion.Interface;
 using badmintion.Interface.Chart;
 using badmintion.Interface.Core;
-using badmintion.Interface.Others;
 using badmintion.Models;
 using badmintion.Services;
 using badmintion.Services.Chart;
 using badmintion.Services.Core;
-using badmintion.Services.Others;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -15,7 +13,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
-using VNPAY.NET;
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 var builder = WebApplication.CreateBuilder(args);
 
@@ -68,47 +65,62 @@ builder.Services.AddScoped<IControllerManageService, ControllerManageService>();
 builder.Services.AddScoped<IFunctionManageService, FunctionManageService>();
 builder.Services.AddScoped<IUnitRoleService, UnitRoleService>();
 builder.Services.AddScoped<IWareHouseService, WareHouseService>();
-builder.Services.AddScoped<IVnPayService, VnPayService>();
-builder.Services.AddSingleton<IVnpay, Vnpay>();
 builder.Services.AddSingleton<IFileService, FileService>();
 builder.Services.AddScoped<IProvinceService, ProvinceService>();
 builder.Services.AddScoped<IDistrictService, DistrictService>();
 builder.Services.AddScoped<ITownService, TownService>();
 builder.Services.AddScoped<IRefreshTokenService, RefreshTokenService>();
+builder.Services.AddSingleton<IPasswordService, PasswordService>();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<IAccountSecurityService, AccountSecurityService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IHistoryImportService, HistoryImportService>();
 builder.Services.AddScoped<IChartService, ChartService>();
 builder.Services.AddScoped<IProductReviewService, ProductReviewService>();
+builder.Services.AddScoped<IPromotionService, PromotionService>();
+builder.Services.AddScoped<IAnalyticsService, AnalyticsService>();
+builder.Services.AddScoped<IAssistantService, AssistantService>();
 // Thêm chính sách CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(name: MyAllowSpecificOrigins,
         policy =>
         {
-            policy.WithOrigins("http://localhost:8080") // Cho phép frontend truy cập
+            policy.WithOrigins(
+                    "http://localhost:8080",
+                    "http://localhost:8081",
+                    "https://localhost:8080",
+                    "https://localhost:8081"
+                ) // Cho phép frontend truy cập
                   .AllowAnyHeader()
-                  .AllowAnyMethod();
+                  .AllowAnyMethod()
+                  .AllowCredentials();
         });
 });
-builder.Services.AddSingleton(new TokenValidationParameters
+var jwtSecret = builder.Configuration["JwtSettings:Secret"];
+if (string.IsNullOrWhiteSpace(jwtSecret))
 {
-    // Cấu hình các tham số xác thực token tại đây
-    ValidateIssuer = true,
-    ValidateAudience = true,
-    ValidateLifetime = true,
-    ClockSkew = TimeSpan.Zero,  // Điều chỉnh nếu cần
-    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("DongThap@123"))
-});
+    if (!builder.Environment.IsDevelopment())
+    {
+        throw new InvalidOperationException(
+            "Thiếu cấu hình JwtSettings:Secret. Hãy cung cấp bằng biến môi trường hoặc secret store.");
+    }
+
+    jwtSecret = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(48));
+}
+builder.Configuration["JwtSettings:Secret"] = jwtSecret;
+
 var tokenValidationParameters = new TokenValidationParameters
 {
     ValidateIssuerSigningKey = true,
-    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("DongThap@123")),
+    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
     ValidateIssuer = false,
     ValidateAudience = false,
-    RequireExpirationTime = false,
+    RequireExpirationTime = true,
     ValidateLifetime = true,
     ClockSkew = TimeSpan.Zero
 };
+builder.Services.AddSingleton(tokenValidationParameters);
 
 
 builder.Services.AddAuthentication(x =>
@@ -122,24 +134,50 @@ builder.Services.AddAuthentication(x =>
     {
         OnTokenValidated = async (context) =>
         {
-            var userService = context.HttpContext.RequestServices.GetRequiredService<IUserService>();
-            var userId = 1;
-            /*var user = await userService.GetById(userId);
-            if (user == null )
+            var principal = context.Principal;
+            var userIdValue = principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                              ?? principal?.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value;
+            var issuedAtValue = principal?.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Iat)?.Value;
+            if (!int.TryParse(userIdValue, out var userId))
             {
-
-                // return unauthorized if user no longer exists
                 context.Fail("Unauthorized");
+                return;
+            }
 
+            var dataContext = context.HttpContext.RequestServices
+                .GetRequiredService<BadmintionNlContext>();
+            DateTime? issuedAt = long.TryParse(issuedAtValue, out var issuedAtSeconds)
+                ? DateTimeOffset.FromUnixTimeSeconds(issuedAtSeconds).UtcDateTime
+                : null;
+            var isCustomer = string.Equals(
+                principal?.FindFirst("account_type")?.Value,
+                "customer",
+                StringComparison.OrdinalIgnoreCase);
+            DateTime? passwordChangedAt;
+            if (isCustomer)
+            {
+                passwordChangedAt = await dataContext.Customers
+                    .Where(x => x.Id == userId && x.IsDeleted == false)
+                    .Select(x => x.PasswordChangedAt)
+                    .FirstOrDefaultAsync();
             }
             else
             {
-                if(user != null)
-                    context.HttpContext.Items["User"] = user;
-            }*/
+                passwordChangedAt = await dataContext.Users
+                    .Where(x => x.Id == userId && x.IsDeleted == false)
+                    .Select(x => x.PasswordChangedAt)
+                    .FirstOrDefaultAsync();
+            }
+
+            if (passwordChangedAt.HasValue &&
+                (!issuedAt.HasValue ||
+                 issuedAt.Value.AddSeconds(2) < passwordChangedAt.Value))
+            {
+                context.Fail("Password changed after token issuance.");
+            }
         }
     };
-    x.RequireHttpsMetadata = false;
+    x.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
     x.SaveToken = true;
     x.TokenValidationParameters = tokenValidationParameters;
 });
@@ -149,6 +187,7 @@ builder.Services.AddAuthentication(x =>
 //    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
 //});
 var app = builder.Build();
+await app.EnsureApplicationSchemaAsync();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -160,8 +199,8 @@ if (app.Environment.IsDevelopment())
 app.UseCors(MyAllowSpecificOrigins);
 app.UseHttpsRedirection();
 
-app.UseAuthorization();
 app.UseAuthentication();
+app.UseAuthorization();
 app.MapControllers();
 
 

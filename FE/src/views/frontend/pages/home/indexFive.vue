@@ -132,92 +132,65 @@
 
   </div>
 </template>
-<script>
+<script setup>
+import { getCurrentInstance, onBeforeUnmount, onMounted, reactive, toRefs } from "vue";
 import AOS from "aos";
 import "aos/dist/aos.css";
 import FullScreenPopup from '@/components/popup/FullScreenPopup.vue';
-import VueMultiselect from 'vue-multiselect'
+import VueMultiselect from 'vue-multiselect';
 import 'vue-multiselect/dist/vue-multiselect.css';
-import {notifyModel} from "@/models/notifyModel";
+import { notifyModel } from "@/models/notifyModel";
 import { Form, Field } from "vee-validate";
 import * as Yup from "yup";
 import { Modal } from 'bootstrap';
-export default {
-  data() {
-    return {
-      showHeaderSpace: false,
-      showPopup: false,
-      theModal: null,
-
-
-
-
-    };
-  },
-  components: {
-    FullScreenPopup,
-    VueMultiselect,
-    Form,
-    Field,
-  },
-  mounted() {
-    this.$nextTick(() => {
-      AOS.init();
-    });
-    const schemaData = {
-      "@context": "http://schema.org",
-      "@type": "Product",
-      "name": "ShopNTH - Hệ Thống Shop Cầu Lông",
-      "description": "ShopNTH - Hệ Thống Shop Cầu Lông",
-    };
-
-    // Tạo thẻ <script> cho JSON-LD
-    const script = document.createElement('script');
-    script.type = 'application/ld+json';
-    script.text = JSON.stringify(schemaData);
-    document.head.appendChild(script);
-
-  },
-  beforeUnmount() {
-    if (this.showHeaderSpace) {
-      window.removeEventListener("scroll", this.handleScroll);
+const {
+  proxy
+} = getCurrentInstance();
+const state = reactive({
+  showHeaderSpace: false,
+  showPopup: false,
+  theModal: null
+});
+const {
+  showHeaderSpace,
+  showPopup,
+  theModal
+} = toRefs(state);
+function handleScroll() {
+  const scroll = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop;
+  state.showHeaderSpace = scroll > 35;
+}
+async function handleSubmit() {
+  await proxy.$store.dispatch("tuVanStore/create", proxy.model).then(res => {
+    if (res != null && res.code === 0) {
+      state.showPopup = false;
     }
-  },
-  created() {
-    // this.getData();
-  },
-  methods: {
-    handleScroll() {
-      const scroll =
-          window.pageYOffset ||
-          document.documentElement.scrollTop ||
-          document.body.scrollTop;
-      this.showHeaderSpace = scroll > 35;
-    },
+    proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+  });
+}
+onMounted(() => {
+  proxy.$nextTick(() => {
+    AOS.init();
+  });
+  const schemaData = {
+    "@context": "http://schema.org",
+    "@type": "Product",
+    "name": "ShopNTH - Hệ Thống Shop Cầu Lông",
+    "description": "ShopNTH - Hệ Thống Shop Cầu Lông"
+  };
 
-    // async getData() {
-    //   await this.$store.dispatch("pageInfoStore/getInfo").then(res => {
-    //     if (res != null && res.code ===0)
-    //     {
-    //       this.pageInfo = pageInfoModel.getJson(res.data);
-    //     }
-
-    //   });
-    // },
-
-    async handleSubmit() {
-
-      await this.$store.dispatch("tuVanStore/create", this.model).then((res) => {
-        if (res != null && res.code ===0) {
-          this.showPopup = false
-        }
-        this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-      });
-    },
-  },
-};
-
-
+  // Tạo thẻ <script> cho JSON-LD
+  // Tạo thẻ <script> cho JSON-LD
+  const script = document.createElement('script');
+  script.type = 'application/ld+json';
+  script.text = JSON.stringify(schemaData);
+  document.head.appendChild(script);
+});
+onBeforeUnmount(() => {
+  if (state.showHeaderSpace) {
+    window.removeEventListener("scroll", handleScroll);
+  }
+});
 </script>
 
 <style>

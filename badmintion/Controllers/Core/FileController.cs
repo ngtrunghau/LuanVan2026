@@ -1,12 +1,11 @@
 ﻿using badmintion.Interface.Core;
-using badmintion.Interface.Others;
 using badmintion.Lib.Core.DefaultRepository;
 using badmintion.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace badmintion.Controllers.Core
 {
-    [Route("api/v1/[controller]")]
+    [Route("api/[controller]")]
     public class FileController : ControllerBase
     {
         private readonly IFileService _service;

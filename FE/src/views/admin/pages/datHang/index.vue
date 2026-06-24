@@ -1,10 +1,10 @@
 <template>
   <div class="main-Wrapper">
-    <pharmacyheader></pharmacyheader>
-    <pharmacysidebar></pharmacysidebar>
+    <adminheader></adminheader>
+    <adminsidebar></adminsidebar>
     <div class="page-wrapper">
       <div class="content container-fluid">
-        <pharmacybreadcrumb2 :title="title" />
+        <adminbreadcrumb2 :title="title" />
         <div class="row">
           <div class="col-12">
             <div class="card">
@@ -172,14 +172,49 @@
                                   </tfoot>
                                 </table>
                               </div>
+
+                              <div class="mt-4">
+                                <h5 class="mb-3">Lịch sử đơn hàng</h5>
+                                <OrderLogTimeline :logs="model.orderLogs || []" />
+                              </div>
+
+                              <div v-if="[1, 2].includes(model.status)" class="mt-4">
+                                <label class="form-label">Lý do hủy đơn</label>
+                                <textarea
+                                  v-model.trim="cancellationReason"
+                                  class="form-control"
+                                  rows="2"
+                                  placeholder="Nhập lý do hủy đơn hàng"
+                                />
+                              </div>
                             
                               <div class="text-end pt-2 mt-3">
+                                <b-button
+                                  type="button"
+                                  variant="outline-danger"
+                                  class="me-1"
+                                  :disabled="exportingInvoice"
+                                  @click="handleExportInvoice"
+                                >
+                                  <i class="fas fa-file-pdf me-1"></i>
+                                  {{ exportingInvoice ? "Đang xuất..." : "Xuất hóa đơn PDF" }}
+                                </b-button>
                                 <b-button
                                     type="button"
                                     class="btn si_accept_cancel btn-submit w-md btn-out"
                                     data-bs-dismiss="modal"
                                 >
                                   Đóng
+                                </b-button>
+                                <b-button
+                                  v-if="[1, 2].includes(model.status)"
+                                  type="button"
+                                  variant="danger"
+                                  class="ms-1"
+                                  :disabled="!cancellationReason"
+                                  @click="handleCancelOrder"
+                                >
+                                  Hủy đơn
                                 </b-button>
                                 <b-button  
                                   v-if="activeTab === 0"
@@ -253,239 +288,270 @@
     <!-- Page Wrapper -->
 
   </div>
-  <pharmacymodel />
-  <pharmacydelete />
 </template>
-<script>
+<script setup>
+import { computed, getCurrentInstance, onMounted, reactive, toRefs, watch } from "vue";
 import VueDatePicker from '@vuepic/vue-datepicker';
 import { odersModel } from "@/models/odersModel";
 import Treeselect from 'vue3-treeselect';
-import VueMultiselect from 'vue-multiselect'
+import VueMultiselect from 'vue-multiselect';
 import 'vue-multiselect/dist/vue-multiselect.css';
 import { Form, Field } from "vee-validate";
 import * as Yup from "yup";
 import { Modal } from 'bootstrap';
-import {notifyModel} from "@/models/notifyModel";
-
-export default {
-  components: {
-    VueDatePicker,
-    Treeselect,
-    VueMultiselect,
-    Form,
-    Field,
+import { notifyModel } from "@/models/notifyModel";
+import OrderLogTimeline from "@/components/orders/OrderLogTimeline.vue";
+import { exportOrderInvoicePdf } from "@/utils/exportDocuments";
+defineOptions({
+  name: "admin/page"
+});
+const {
+  proxy
+} = getCurrentInstance();
+const state = reactive({
+  title: "DANH SÁCH ĐƠN HÀNG",
+  model: odersModel.baseJson(),
+  activeTab: 0,
+  // Tab hiện tại (0, 1, 2 tương ứng với 3 tab)
+  tabData: [{
+    // Tab 1: Tất cả đơn hàng
+    list: [],
+    totalRows: 0,
+    numberOfElement: 0
+  }, {
+    // Tab 2: Đơn chưa xử lý
+    list: [],
+    totalRows: 0,
+    numberOfElement: 0
+  }, {
+    // Tab 3: Đơn đã xử lý
+    list: [],
+    totalRows: 0,
+    numberOfElement: 0
+  }],
+  listSP: [],
+  currentPage: 1,
+  numberOfElement: 1,
+  perPage: 5,
+  pageOptions: [5, 10, 25, 50, 100],
+  sortBy: 'age',
+  sortDesc: false,
+  theModal: null,
+  isView: false,
+  itemFilter: {
+    userName: null,
+    unitRole: null
   },
-  data() {
-    return {
-      title: "DANH SÁCH ĐƠN HÀNG",
-      model: odersModel.baseJson(),
-      activeTab: 0, // Tab hiện tại (0, 1, 2 tương ứng với 3 tab)
-      tabData: [
-        { // Tab 1: Tất cả đơn hàng
-          list: [],
-          totalRows: 0,
-          numberOfElement: 0
-        },
-        { // Tab 2: Đơn chưa xử lý
-          list: [],
-          totalRows: 0,
-          numberOfElement: 0
-        },
-        { // Tab 3: Đơn đã xử lý
-          list: [],
-          totalRows: 0,
-          numberOfElement: 0
-        }
-      ],
-      listSP: [],
-      currentPage: 1,
-      numberOfElement: 1,
-      perPage: 5,
-      pageOptions: [5, 10, 25, 50, 100],
-      sortBy: 'age',
-      sortDesc: false,
-      theModal: null,
-      isView: false,
-      itemFilter: {
-        userName: null,
-        unitRole: null
-      },
-    };
-  },
-  computed: {
-    currentTabData() {
-      return this.tabData[this.activeTab];
-    }
-  },
-  name: "pharmacy/user",
-
-  created() {
-    this.getListSanPham();
-    this.loadTabData(1); // Load dữ liệu tab đầu tiên
-  },
-  mounted() {
-    this.theModal = new Modal(document.getElementById('info_modal'));
-
-    this.$refs.ref_info_modal.addEventListener('hidden.bs.modal', event => {
-      this.model = odersModel.baseJson();
-    });
-    this.$refs.ref_delete.addEventListener('hidden.bs.modal', event => {
-      this.model = odersModel.baseJson();
-    });
-  },
-  setup() {
-    const schema = Yup.object().shape({
-      // userName: Yup.string().required("Tài khoản không được bỏ trống !"),
-      // name : Yup.string().required("Họ và tên không được bỏ trống !"),
-      // password : Yup.string().required("Mật khẩu không được bỏ trống !"),
-      // unitRole : Yup.mixed().required("Vai trò không được bỏ trống !"),
-    });
-
-    return {
-      schema
-    };
-  },
-  watch: {
-    perPage: {
-      deep: true,
-      handler(val) {
-        this.loadTabData(this.activeTab + 1);
-      }
-    },
-    currentPage: {
-      deep: true,
-      handler(val) {
-        this.loadTabData(this.activeTab + 1);
-      }
-    }
-  },
-
-  methods: {
-    formatDate(isoString) {
-      if (!isoString) return "N/A";
-      try {
-        const date = new Date(isoString);
-        if (isNaN(date.getTime())) return "N/A";
-        return new Intl.DateTimeFormat('vi-VN', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false
-        }).format(date);
-      } catch (e) {
-        return "N/A";
-      }
-    },
-    formatCurrency(value) {
-      return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
-    },
-    calculateSubTotal(items) {
-      if (!items) return 0;
-      return items.reduce((total, item) => total + (item.price * item.quantity), 0);
-    },
-    handleClear() {
-      this.itemFilter = {
-        userName: null,
-        unitRole: null
-      }
-    },
-    handleSearch() {
-      this.loadTabData(this.activeTab + 1);
-    },
-    
-    async loadTabData(tabNumber) {
-      let params = {
-        start: this.currentPage,
-        limit: this.perPage,
-        sortBy: this.sortBy,
-        userName: this.itemFilter.userName,
-        unitRole: this.itemFilter.unitRole,
-      };
-      
-      let actionName;
-      switch(tabNumber) {
-        case 1:
-          actionName = "odersStore/getPagingParams"; // Tất cả đơn hàng
-          break;
-        case 2:
-          actionName = "odersStore/getPagingParamsStatus2"; // Đơn chưa xử lý
-          break;
-        case 3:
-          actionName = "odersStore/getPagingParamsStatus3"; // Đơn đã xử lý
-          break;
-        default:
-          actionName = "odersStore/getPagingParams";
-      }
-      
-      await this.$store.dispatch(actionName, params).then(res => {
-        if (res != null && res.code === 0) {
-          const targetTab = tabNumber - 1; // Vì mảng bắt đầu từ 0
-          this.tabData[targetTab].list = res.data.data;
-          this.tabData[targetTab].totalRows = res.data.totalRows;
-          this.tabData[targetTab].numberOfElement = res.data.data.length;
-        }
-        this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-      });
-    },
-
-    async getListSanPham(){
-      await this.$store.dispatch("sanPhamStore/getAll").then((res) =>{
-        if (res != null && res.code ===0) {
-          this.listSP = res.data || [];
-        }
-      })
-    },
-    async handleGetInfo(id) {
-      await this.$store.dispatch("odersStore/getById", {id: id}).then((res) => {
-        if (res != null && res.code ===0) {
-          this.model = res.data
-          console.log("MODEL: ", this.model)
-        }
-      });
-    },
-    handleShowDeleteModal(id) {
-      this.model.id = id;
-      this.showDeleteModal = true;
-    },
-    async handleDelete() {
-      if (this.model.id != 0 && this.model.id != null && this.model.id) {
-        await this.$store.dispatch("odersStore/delete", { 'id': this.model.id }).then((res) => {
-          if (res != null && res.code ===0) {
-            this.showDeleteModal = false;
-            this.loadTabData(this.activeTab + 1); // Reload dữ liệu tab hiện tại sau khi xóa
-          }
-          this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-        });
-      }
-    },
-    async handleReset() {
-      if (this.model.id != 0 && this.model.id != null && this.model.id) {
-        await this.$store.dispatch("odersStore/reset", { 'id': this.model.id }).then((res) => {
-          if (res != null && res.code ===0) {
-            this.showResetModal = false;
-            this.loadTabData(this.activeTab + 1); // Reload dữ liệu tab hiện tại
-          }
-          this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-        });
-      }
-    },
-    async handleSubmit() {
-      let params = {
-        id: this.model.shippingDetail[0].id,
-        ordersId: this.model.id,
-        status: 2
-      }
-      await this.$store.dispatch("shippingStore/update", params).then((res) => {
-        if (res != null && res.code ===0) {
-          this.loadTabData(this.activeTab + 1); // Reload dữ liệu tab hiện tại
-          this.theModal.hide();
-        }
-        this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-      });
-    }
+  cancellationReason: "",
+  exportingInvoice: false
+});
+const {
+  title,
+  model,
+  activeTab,
+  tabData,
+  listSP,
+  currentPage,
+  numberOfElement,
+  perPage,
+  pageOptions,
+  sortBy,
+  sortDesc,
+  theModal,
+  isView,
+  itemFilter,
+  cancellationReason,
+  exportingInvoice
+} = toRefs(state);
+const schema = Yup.object().shape({
+  // userName: Yup.string().required("Tài khoản không được bỏ trống !"),
+  // name : Yup.string().required("Họ và tên không được bỏ trống !"),
+  // password : Yup.string().required("Mật khẩu không được bỏ trống !"),
+  // unitRole : Yup.mixed().required("Vai trò không được bỏ trống !"),
+});
+function formatDate(isoString) {
+  if (!isoString) return "N/A";
+  try {
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return "N/A";
+    return new Intl.DateTimeFormat('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    }).format(date);
+  } catch (e) {
+    return "N/A";
   }
-};
+}
+function formatCurrency(value) {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND'
+  }).format(value);
+}
+function calculateSubTotal(items) {
+  if (!items) return 0;
+  return items.reduce((total, item) => total + item.price * item.quantity, 0);
+}
+async function handleExportInvoice() {
+  state.exportingInvoice = true;
+  try {
+    await exportOrderInvoicePdf(state.model);
+  } catch (error) {
+    proxy.$store.dispatch("snackBarStore/addNotify", {
+      code: -1,
+      message: error.message || "Không thể xuất hóa đơn PDF."
+    });
+  } finally {
+    state.exportingInvoice = false;
+  }
+}
+function handleClear() {
+  state.itemFilter = {
+    userName: null,
+    unitRole: null
+  };
+}
+function handleSearch() {
+  loadTabData(state.activeTab + 1);
+}
+async function loadTabData(tabNumber) {
+  let params = {
+    start: state.currentPage,
+    limit: state.perPage,
+    sortBy: state.sortBy,
+    userName: state.itemFilter.userName,
+    unitRole: state.itemFilter.unitRole
+  };
+  let actionName;
+  switch (tabNumber) {
+    case 1:
+      actionName = "odersStore/getPagingParams"; // Tất cả đơn hàng
+      break;
+    case 2:
+      actionName = "odersStore/getPagingParamsStatus2"; // Đơn chưa xử lý
+      break;
+    case 3:
+      actionName = "odersStore/getPagingParamsStatus3"; // Đơn đã xử lý
+      break;
+    default:
+      actionName = "odersStore/getPagingParams";
+  }
+  await proxy.$store.dispatch(actionName, params).then(res => {
+    if (res != null && res.code === 0) {
+      const targetTab = tabNumber - 1; // Vì mảng bắt đầu từ 0
+      state.tabData[targetTab].list = res.data.data;
+      state.tabData[targetTab].totalRows = res.data.totalRows;
+      state.tabData[targetTab].numberOfElement = res.data.data.length;
+    }
+    proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+  });
+}
+async function getListSanPham() {
+  await proxy.$store.dispatch("sanPhamStore/getAll").then(res => {
+    if (res != null && res.code === 0) {
+      state.listSP = res.data || [];
+    }
+  });
+}
+async function handleGetInfo(id) {
+  await proxy.$store.dispatch("odersStore/getById", {
+    id: id
+  }).then(res => {
+    if (res != null && res.code === 0) {
+      state.model = res.data;
+      console.log("MODEL: ", state.model);
+    }
+  });
+}
+function handleShowDeleteModal(id) {
+  state.model.id = id;
+  proxy.showDeleteModal = true;
+}
+async function handleDelete() {
+  if (state.model.id != 0 && state.model.id != null && state.model.id) {
+    await proxy.$store.dispatch("odersStore/delete", {
+      'id': state.model.id
+    }).then(res => {
+      if (res != null && res.code === 0) {
+        proxy.showDeleteModal = false;
+        loadTabData(state.activeTab + 1); // Reload dữ liệu tab hiện tại sau khi xóa
+      }
+      proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+    });
+  }
+}
+async function handleReset() {
+  if (state.model.id != 0 && state.model.id != null && state.model.id) {
+    await proxy.$store.dispatch("odersStore/reset", {
+      'id': state.model.id
+    }).then(res => {
+      if (res != null && res.code === 0) {
+        proxy.showResetModal = false;
+        loadTabData(state.activeTab + 1); // Reload dữ liệu tab hiện tại
+      }
+      proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+    });
+  }
+}
+async function handleSubmit() {
+  let params = {
+    id: state.model.shippingDetail[0].id,
+    ordersId: state.model.id,
+    status: 2
+  };
+  await proxy.$store.dispatch("shippingStore/update", params).then(res => {
+    if (res != null && res.code === 0) {
+      loadTabData(state.activeTab + 1); // Reload dữ liệu tab hiện tại
+      state.theModal.hide();
+    }
+    proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+  });
+}
+async function handleCancelOrder() {
+  const latestShipping = state.model.shippingDetail?.[0];
+  if (!latestShipping || !state.cancellationReason) return;
+
+  const res = await proxy.$store.dispatch("shippingStore/update", {
+    id: latestShipping.id,
+    ordersId: state.model.id,
+    status: 4,
+    note: state.cancellationReason
+  });
+  if (res?.code === 0) {
+    state.cancellationReason = "";
+    state.theModal.hide();
+    loadTabData(state.activeTab + 1);
+  }
+  proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+}
+const currentTabData = computed(() => {
+  return state.tabData[state.activeTab];
+});
+watch(() => state.perPage, val => {
+  loadTabData(state.activeTab + 1);
+}, {
+  deep: true
+});
+watch(() => state.currentPage, val => {
+  loadTabData(state.activeTab + 1);
+}, {
+  deep: true
+});
+onMounted(() => {
+  state.theModal = new Modal(document.getElementById('info_modal'));
+  proxy.$refs.ref_info_modal.addEventListener('hidden.bs.modal', event => {
+    state.model = odersModel.baseJson();
+    state.cancellationReason = "";
+  });
+  proxy.$refs.ref_delete.addEventListener('hidden.bs.modal', event => {
+    state.model = odersModel.baseJson();
+  });
+});
+getListSanPham();
+loadTabData(1); // Load dữ liệu tab đầu tiên
 </script>
 

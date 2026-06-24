@@ -15,5 +15,11 @@ public partial class ShippingDetail
 
     public bool? IsDeleted { get; set; }
 
+    public string? Note { get; set; }
+
+    public string? ChangedBy { get; set; }
+
+    public string? ChangedByType { get; set; }
+
     public virtual Order? Orders { get; set; }
 }

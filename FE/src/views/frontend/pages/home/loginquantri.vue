@@ -116,53 +116,44 @@
     </div>
   </div>
 </template>
-<script>
-import {notifyModel} from "@/models/notifyModel";
+<script setup>
+import { getCurrentInstance, reactive, toRefs } from "vue";
+import { notifyModel } from "@/models/notifyModel";
 import * as Yup from "yup";
-import {Field, Form} from "vee-validate";
-
-export default {
-  components: {
-    Form,
-    Field,
-  },
-  data() {
-    return {
-      model:{
-        username: null,
-        password: null
-      },
-    };
-  },
-  setup() {
-    const schema = Yup.object().shape({
-      username: Yup.string().required("Tài khoản không được bỏ trống !"),
-      password: Yup.string().required("Mật khẩu không được bỏ trống !"),
-    });
-    return {
-      schema,
-    };
-  },
-  methods: {
-      async submitForm() {
-        await this.$store.dispatch("authStore/login", this.model).then((res) => {
-          if (res && res.code ==0 ) {
-            this.listMenu = res.data.menu;
-            console.log("LOG SUCCCESS ", res.data.accessToken)
-            localStorage.setItem('auth-user', JSON.stringify(res.data));
-            localStorage.setItem('token', res.data.accessToken);
-            if (window.axios) {
-              window.axios.defaults.headers.common.Authorization = `Bearer ${res.data.accessToken}`;
-            }
-            // window.location.href="/admin"
-            // this.$router.push("/quan-tri/profile");
-            window.location.href = "/quan-tri/dashboard";
-          }
-          this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res))
-        })
-      },
-  },
-};
+import { Field, Form } from "vee-validate";
+const {
+  proxy
+} = getCurrentInstance();
+const state = reactive({
+  model: {
+    username: null,
+    password: null
+  }
+});
+const {
+  model
+} = toRefs(state);
+const schema = Yup.object().shape({
+  username: Yup.string().required("Tài khoản không được bỏ trống !"),
+  password: Yup.string().required("Mật khẩu không được bỏ trống !")
+});
+async function submitForm() {
+  await proxy.$store.dispatch("authStore/login", state.model).then(res => {
+    if (res && res.code == 0) {
+      proxy.listMenu = res.data.menu;
+      console.log("LOG SUCCCESS ", res.data.accessToken);
+      localStorage.setItem('auth-user', JSON.stringify(res.data));
+      localStorage.setItem('token', res.data.accessToken);
+      if (window.axios) {
+        window.axios.defaults.headers.common.Authorization = `Bearer ${res.data.accessToken}`;
+      }
+      // window.location.href="/admin"
+      // this.$router.push("/quan-tri/profile");
+      window.location.href = "/quan-tri/dashboard";
+    }
+    proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+  });
+}
 </script>
 
 

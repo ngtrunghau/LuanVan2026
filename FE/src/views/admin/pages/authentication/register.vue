@@ -100,68 +100,47 @@
   </div>
   <!-- /Main Wrapper -->
 </template>
-<script>
+<script setup>
+import { computed } from "vue";
 import { ref } from "vue";
 import { Form, Field } from "vee-validate";
 import * as Yup from "yup";
 import { router } from "@/router";
-export default {
-  components: {
-    Form,
-    Field,
-  },
-  computed: {
-    buttonLabel() {
-      return this.showPassword ? "Hide" : "Show";
-    },
-  },
-  methods: {
-    toggleShow() {
-      this.showPassword = !this.showPassword;
-    },
-  },
-  setup() {
-    const showPassword = ref(false);
-    const emailError = ref("");
-    const passwordError = ref("");
-
-    const schema = Yup.object().shape({
-      email: Yup.string().required("Email is required").email("Email is invalid"),
-      password: Yup.string()
-        .min(6, "Password must be at least 6 characters")
-        .required("Password is required"),
-      confirmpassword: Yup.string()
-        .min(6, "Password must be at least 6 characters")
-        .required("Confirm password is required"),
-    });
-
-    const onSubmit = (values) => {
-      if (values.password === values.confirmpassword) {
-        let Rawdata = localStorage.getItem("storedData");
-        let Pdata = [];
-        Pdata = JSON.parse(Rawdata);
-        const Eresult = Pdata.find(({ email }) => email === values.email);
-        if (Eresult) {
-          emailError.value = "This email is already in use";
-        } else {
-          Pdata.push(values);
-          const jsonData = JSON.stringify(Pdata);
-          localStorage.setItem("storedData", jsonData);
-          router.push("login");
-        }
-      } else {
-        passwordError.value = "Password does not match";
-      }
-    };
-
-    return {
-      showPassword,
-      schema,
-      onSubmit,
-      emailError,
-      passwordError,
-    };
-  },
-  name: "/admin/register",
+defineOptions({
+  name: "/admin/register"
+});
+const showPassword = ref(false);
+const emailError = ref("");
+const passwordError = ref("");
+const schema = Yup.object().shape({
+  email: Yup.string().required("Email is required").email("Email is invalid"),
+  password: Yup.string().min(6, "Password must be at least 6 characters").required("Password is required"),
+  confirmpassword: Yup.string().min(6, "Password must be at least 6 characters").required("Confirm password is required")
+});
+const onSubmit = values => {
+  if (values.password === values.confirmpassword) {
+    let Rawdata = localStorage.getItem("storedData");
+    let Pdata = [];
+    Pdata = JSON.parse(Rawdata);
+    const Eresult = Pdata.find(({
+      email
+    }) => email === values.email);
+    if (Eresult) {
+      emailError.value = "This email is already in use";
+    } else {
+      Pdata.push(values);
+      const jsonData = JSON.stringify(Pdata);
+      localStorage.setItem("storedData", jsonData);
+      router.push("login");
+    }
+  } else {
+    passwordError.value = "Password does not match";
+  }
 };
+function toggleShow() {
+  showPassword.value = !showPassword.value;
+}
+const buttonLabel = computed(() => {
+  return showPassword.value ? "Hide" : "Show";
+});
 </script>

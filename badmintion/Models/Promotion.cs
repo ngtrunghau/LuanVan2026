@@ -15,5 +15,15 @@ public partial class Promotion
 
     public decimal? MinOrderValue { get; set; }
 
+    public string? Code { get; set; }
+
+    public DateTime? StartDate { get; set; }
+
+    public DateTime? EndDate { get; set; }
+
+    public int? MaxUsage { get; set; }
+
+    public int? UsedCount { get; set; }
+
     public bool? IsDeleted { get; set; }
 }

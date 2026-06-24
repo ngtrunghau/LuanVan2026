@@ -15,13 +15,13 @@
                   src="@/assets/admin/img/profiles/avatar-02.jpg"
                   alt="User Image"
                 />
-                <h4>John Doe</h4>
+                <h4>ShopNTH Admin</h4>
               </div>
 
               <!-- Form -->
               <form @submit.prevent="submitForm">
                 <div class="form-group">
-                  <input class="form-control" type="text" placeholder="Password" />
+                  <input class="form-control" type="password" placeholder="Mật khẩu" />
                 </div>
                 <div class="form-group mb-0">
                   <b-button class="btn btn-primary w-100" type="submit">Enter</b-button>
@@ -30,8 +30,8 @@
               <!-- /Form -->
 
               <div class="text-center dont-have">
-                Sign in as a different user?
-                <router-link to="/admin/login">Login</router-link>
+                Đăng nhập bằng tài khoản khác?
+                <router-link to="/quan-tri/login">Đăng nhập</router-link>
               </div>
             </div>
           </div>
@@ -42,16 +42,16 @@
   <!-- /Main Wrapper -->
 </template>
 
-<script>
-export default {
-  data() {
-    return {};
-  },
-  methods: {
-    submitForm() {
-      this.$router.push("/admin/index");
-    },
-  },
-  name: "/admin/lock-screen",
-};
+<script setup>
+import { getCurrentInstance, reactive, toRefs } from "vue";
+defineOptions({
+  name: "/admin/lock-screen"
+});
+const {
+  proxy
+} = getCurrentInstance();
+const state = reactive({});
+function submitForm() {
+  proxy.$router.push("/quan-tri/dashboard");
+}
 </script>

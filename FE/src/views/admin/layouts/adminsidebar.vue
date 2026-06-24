@@ -117,6 +117,24 @@
               <span>Quản lý đơn hàng</span>
             </router-link>
           </li>
+          <li>
+            <router-link to="/quan-tri/canh-bao-ton-kho" class="btn consult-btn" :class="{ 'active': isActive('/quan-tri/canh-bao-ton-kho') }">
+              <i class="fas fa-exclamation-triangle" style="font-size: 16px; display: flex; justify-content: center;"></i>
+              <span>Cảnh báo tồn kho</span>
+            </router-link>
+          </li>
+          <li>
+            <router-link to="/quan-tri/khuyen-mai" class="btn consult-btn" :class="{ 'active': isActive('/quan-tri/khuyen-mai') }">
+              <i class="fas fa-tags" style="font-size: 16px; display: flex; justify-content: center;"></i>
+              <span>Quản lý khuyến mãi</span>
+            </router-link>
+          </li>
+          <li>
+            <router-link to="/quan-tri/danh-gia" class="btn consult-btn" :class="{ 'active': isActive('/quan-tri/danh-gia') }">
+              <i class="fas fa-comment-dots" style="font-size: 16px; display: flex; justify-content: center;"></i>
+              <span>Kiểm duyệt đánh giá</span>
+            </router-link>
+          </li>
           <!-- <li>
             <router-link to="/quan-tri/chi-tiet-van-chuyen" class="btn consult-btn" :class="{ 'active': isActive('/quan-tri/chi-tiet-van-chuyen') }">
               <i class="fa fa-star" style="font-size: 16px; display: flex; justify-content: center;"></i>
@@ -132,199 +150,153 @@
   <!-- /Sidebar -->
 </template>
 
-<script>
+<script setup>
+import { computed, getCurrentInstance, reactive, toRefs } from "vue";
 import { PerfectScrollbar } from "vue3-perfect-scrollbar";
 import "vue3-perfect-scrollbar/dist/vue3-perfect-scrollbar.css";
-export default {
-  data() {
-    return {
-      settings: {
-        suppressScrollX: true,
-      },
-      reportsMenuData: false,
-      authenticationMenuData: false,
-      errorMenuData: false,
-      formMenuData: false,
-      tablesMenuData: false,
-      multilevelMenuData: false,
-      activeClass: "active",
-
-      showAdminConfigMenus: false,
-
-      listMenu : [],
-    };
+const {
+  proxy
+} = getCurrentInstance();
+const state = reactive({
+  settings: {
+    suppressScrollX: true
   },
-  methods: {
-    isActive(path) {
-      return this.$route.path === path; // Kiểm tra nếu route hiện tại khớp với path
-    },
-    scrollHanle(evt) {},
-    togglereportsMenu() {
-      this.reportsMenuData = !this.reportsMenuData;
-    },
-    toggleauthenticationMenu() {
-      this.authenticationMenuData = !this.authenticationMenuData;
-    },
-    toggleerrorMenu() {
-      this.errorMenuData = !this.errorMenuData;
-    },
-    toggleformsMenu() {
-      this.formsMenuData = !this.formsMenuData;
-    },
-    toggletablesMenu() {
-      this.tablesMenuData = !this.tablesMenuData;
-    },
-    togglemultilevelMenu() {
-      this.multilevelMenuData = !this.multilevelMenuData;
-    },
-    isCustomDropdown() {
-      //Search bar
-      var searchOptions = document.getElementById("search-close-options");
-      var dropdown = document.getElementById("search-dropdown");
-      var searchInput = document.getElementById("search-options");
-
-      searchInput.addEventListener("focus", () => {
-        var inputLength = searchInput.value.length;
-        if (inputLength > 0) {
-          dropdown.classList.add("show");
-          searchOptions.classList.remove("d-none");
-        } else {
-          dropdown.classList.remove("show");
-          searchOptions.classList.add("d-none");
-        }
-      });
-
-      searchInput.addEventListener("keyup", () => {
-        var inputLength = searchInput.value.length;
-        if (inputLength > 0) {
-          dropdown.classList.add("show");
-          searchOptions.classList.remove("d-none");
-        } else {
-          dropdown.classList.remove("show");
-          searchOptions.classList.add("d-none");
-        }
-      });
-
-      searchOptions.addEventListener("click", () => {
-        searchInput.value = "";
-        dropdown.classList.remove("show");
-        searchOptions.classList.add("d-none");
-      });
-
-      document.body.addEventListener("click", (e) => {
-        if (e.target.getAttribute("id") !== "search-options") {
-          dropdown.classList.remove("show");
-          searchOptions.classList.add("d-none");
-        }
-      });
-    },
-    initActiveMenu(ele) {
-      setTimeout(() => {
-        if (document.querySelector("#sidebar")) {
-          let a = document
-              .querySelector("#sidebar")
-              .querySelector('[href="' + ele + '"]');
-
-          if (a) {
-            a.classList.add("active");
-            let parentCollapseDiv = a.closest(".collapse.menu-dropdown");
-            if (parentCollapseDiv) {
-              parentCollapseDiv.classList.add("show");
-              parentCollapseDiv.parentElement.children[0].classList.add("active");
-              parentCollapseDiv.parentElement.children[0].setAttribute(
-                  "aria-expanded",
-                  "true"
-              );
-              if (parentCollapseDiv.parentElement.closest(".collapse.menu-dropdown")) {
-                parentCollapseDiv.parentElement
-                    .closest(".collapse")
-                    .classList.add("show");
-                if (
-                    parentCollapseDiv.parentElement.closest(".collapse")
-                        .previousElementSibling
-                )
-                  parentCollapseDiv.parentElement
-                      .closest(".collapse")
-                      .previousElementSibling.classList.add("active");
-              }
-            }
+  reportsMenuData: false,
+  authenticationMenuData: false,
+  errorMenuData: false,
+  formMenuData: false,
+  tablesMenuData: false,
+  multilevelMenuData: false,
+  activeClass: "active",
+  showAdminConfigMenus: false,
+  listMenu: []
+});
+const {
+  settings,
+  reportsMenuData,
+  authenticationMenuData,
+  errorMenuData,
+  formMenuData,
+  tablesMenuData,
+  multilevelMenuData,
+  activeClass,
+  showAdminConfigMenus,
+  listMenu
+} = toRefs(state);
+function isActive(path) {
+  return proxy.$route.path === path; // Kiểm tra nếu route hiện tại khớp với path
+}
+function scrollHanle(evt) {}
+function togglereportsMenu() {
+  state.reportsMenuData = !state.reportsMenuData;
+}
+function toggleauthenticationMenu() {
+  state.authenticationMenuData = !state.authenticationMenuData;
+}
+function toggleerrorMenu() {
+  state.errorMenuData = !state.errorMenuData;
+}
+function toggleformsMenu() {
+  proxy.formsMenuData = !proxy.formsMenuData;
+}
+function toggletablesMenu() {
+  state.tablesMenuData = !state.tablesMenuData;
+}
+function togglemultilevelMenu() {
+  state.multilevelMenuData = !state.multilevelMenuData;
+}
+function isCustomDropdown() {
+  //Search bar
+  var searchOptions = document.getElementById("search-close-options");
+  var dropdown = document.getElementById("search-dropdown");
+  var searchInput = document.getElementById("search-options");
+  searchInput.addEventListener("focus", () => {
+    var inputLength = searchInput.value.length;
+    if (inputLength > 0) {
+      dropdown.classList.add("show");
+      searchOptions.classList.remove("d-none");
+    } else {
+      dropdown.classList.remove("show");
+      searchOptions.classList.add("d-none");
+    }
+  });
+  searchInput.addEventListener("keyup", () => {
+    var inputLength = searchInput.value.length;
+    if (inputLength > 0) {
+      dropdown.classList.add("show");
+      searchOptions.classList.remove("d-none");
+    } else {
+      dropdown.classList.remove("show");
+      searchOptions.classList.add("d-none");
+    }
+  });
+  searchOptions.addEventListener("click", () => {
+    searchInput.value = "";
+    dropdown.classList.remove("show");
+    searchOptions.classList.add("d-none");
+  });
+  document.body.addEventListener("click", e => {
+    if (e.target.getAttribute("id") !== "search-options") {
+      dropdown.classList.remove("show");
+      searchOptions.classList.add("d-none");
+    }
+  });
+}
+function initActiveMenu(ele) {
+  setTimeout(() => {
+    if (document.querySelector("#sidebar")) {
+      let a = document.querySelector("#sidebar").querySelector('[href="' + ele + '"]');
+      if (a) {
+        a.classList.add("active");
+        let parentCollapseDiv = a.closest(".collapse.menu-dropdown");
+        if (parentCollapseDiv) {
+          parentCollapseDiv.classList.add("show");
+          parentCollapseDiv.parentElement.children[0].classList.add("active");
+          parentCollapseDiv.parentElement.children[0].setAttribute("aria-expanded", "true");
+          if (parentCollapseDiv.parentElement.closest(".collapse.menu-dropdown")) {
+            parentCollapseDiv.parentElement.closest(".collapse").classList.add("show");
+            if (parentCollapseDiv.parentElement.closest(".collapse").previousElementSibling) parentCollapseDiv.parentElement.closest(".collapse").previousElementSibling.classList.add("active");
           }
         }
-      }, 1000);
-    },
-    hasItems(item) {
-   //   console.log("LOG HAS ITEM :  ",item.children !== undefined ? item.children?.length > 0 : false)
-      return item.children !== undefined ? item.children?.length > 0 : false;
-    },
-    isCheck(item) {
-      if (item != null && this.$route.name != null)
-         return  `/${this.$route.name}` == item;
-      else
-        return false ;
-    },
-
-    handleGetIdMenu(path) {
-
-        this.$router.push(path);
-    },
-  },
-  components: {
-    PerfectScrollbar,
-  },
-  created (){
-    var currentUser = localStorage.getItem("auth-user");
-    if (currentUser) {
-      let data = JSON.parse(currentUser)
-      if (data && data.menu)
-        this.listMenu = data.menu;
+      }
     }
-  },
-  computed: {
-    currentPath() {
-    //  console.log("LOG :  ", this.$route.name)
-      return this.$route.name;
-    },
-    reportsMenu() {
-      return (
-          this.$route.name == "admin/invoice-report" || this.$route.name == "admin/invoice"
-      );
-    },
-    authenticationMenu() {
-      return (
-          this.$route.name == "admin/forgot-password" ||
-          this.$route.name == "admin/lock-screen" ||
-          this.$route.name == "admin/login" ||
-          this.$route.name == "admin/register"
-      );
-    },
-
-    errorMenu() {
-      return (
-          this.$route.name == "admin/error-404" || this.$route.name == "admin/error-500"
-      );
-    },
-    tablesMenu() {
-      return (
-          this.$route.name == "admin/data-tables" ||
-          this.$route.name == "admin/tables-basic"
-      );
-    },
-
-    formsMenu() {
-      return (
-          this.$route.name == "admin/form-basic-inputs" ||
-          this.$route.name == "admin/form-input-groups" ||
-          this.$route.name == "admin/form-horizontal" ||
-          this.$route.name == "admin/form-mask" ||
-          this.$route.name == "admin/form-validation" ||
-          this.$route.name == "admin/form-vertical"
-      );
-    },
-
-    multilevelMenu() {},
-  },
-
-};
+  }, 1000);
+}
+function hasItems(item) {
+  //   console.log("LOG HAS ITEM :  ",item.children !== undefined ? item.children?.length > 0 : false)
+  return item.children !== undefined ? item.children?.length > 0 : false;
+}
+function isCheck(item) {
+  if (item != null && proxy.$route.name != null) return `/${proxy.$route.name}` == item;else return false;
+}
+function handleGetIdMenu(path) {
+  proxy.$router.push(path);
+}
+const currentPath = computed(() => {
+  //  console.log("LOG :  ", this.$route.name)
+  return proxy.$route.name;
+});
+const reportsMenu = computed(() => {
+  return proxy.$route.name == "admin/invoice-report" || proxy.$route.name == "admin/invoice";
+});
+const authenticationMenu = computed(() => {
+  return proxy.$route.name == "admin/forgot-password" || proxy.$route.name == "admin/lock-screen" || proxy.$route.name == "admin/login" || proxy.$route.name == "admin/register";
+});
+const errorMenu = computed(() => {
+  return proxy.$route.name == "admin/error-404" || proxy.$route.name == "admin/error-500";
+});
+const tablesMenu = computed(() => {
+  return proxy.$route.name == "admin/data-tables" || proxy.$route.name == "admin/tables-basic";
+});
+const formsMenu = computed(() => {
+  return proxy.$route.name == "admin/form-basic-inputs" || proxy.$route.name == "admin/form-input-groups" || proxy.$route.name == "admin/form-horizontal" || proxy.$route.name == "admin/form-mask" || proxy.$route.name == "admin/form-validation" || proxy.$route.name == "admin/form-vertical";
+});
+const multilevelMenu = computed(() => {});
+var currentUser = localStorage.getItem("auth-user");
+if (currentUser) {
+  let data = JSON.parse(currentUser);
+  if (data && data.menu) state.listMenu = data.menu;
+}
 </script>
 <style scoped>
 .btn.consult-btn.active {

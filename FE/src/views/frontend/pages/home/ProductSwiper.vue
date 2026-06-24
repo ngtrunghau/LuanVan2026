@@ -34,31 +34,20 @@
     </div>
   </template>
   
-  <script>
-  import { Swiper, SwiperSlide } from 'swiper/vue';
-  import { Pagination, Navigation } from 'swiper/modules';
-  import 'swiper/css';
-  import 'swiper/css/pagination';
-  import 'swiper/css/navigation';
-  
-  export default {
-    props: {
-      products: Array,
-      categoryName: String
-    },
-    components: { Swiper, SwiperSlide },
-    setup() {
-      return {
-        modules: [Pagination, Navigation]
-      };
-    },
-    methods: {
-      formatCurrency(value) {
-        return value ? value.toLocaleString("vi-VN") + "đ" : "0đ";
-      }
-    }
-  };
-  </script>
+  <script setup>
+import { Swiper, SwiperSlide } from 'swiper/vue';
+import { Pagination, Navigation } from 'swiper/modules';
+import 'swiper/css';
+import 'swiper/css/pagination';
+import 'swiper/css/navigation';
+const props = defineProps({
+  products: Array,
+  categoryName: String
+});
+function formatCurrency(value) {
+  return value ? value.toLocaleString("vi-VN") + "đ" : "0đ";
+}
+</script>
   
   <style scoped>
   .product-image {

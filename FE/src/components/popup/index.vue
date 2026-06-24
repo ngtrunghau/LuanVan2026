@@ -7,35 +7,38 @@
     </div>
   </template>
   
-  <script>
-  export default {
-    name: 'Popup',
-    props: {
-      isVisible: {
-        type: Boolean,
-        default: false,
-      },
-      position: {
-        type: Object,
-        default: () => ({ top: 0, left: 0 })
-    }
-    },
-    computed: {
-        popupStyle() {
-        return {
-            position: 'absolute',
-            top: `${this.position.top}px`,
-            left: `${this.position.left}px`,
-        };
-        },
-    },
-    methods: {
-      close() {
-        this.$emit('close');
-      },
-    },
+  <script setup>
+import { computed, getCurrentInstance } from "vue";
+defineOptions({
+  name: 'Popup'
+});
+const props = defineProps({
+  isVisible: {
+    type: Boolean,
+    default: false
+  },
+  position: {
+    type: Object,
+    default: () => ({
+      top: 0,
+      left: 0
+    })
+  }
+});
+const {
+  proxy
+} = getCurrentInstance();
+function close() {
+  proxy.$emit('close');
+}
+const popupStyle = computed(() => {
+  return {
+    position: 'absolute',
+    top: `${props.position.top}px`,
+    left: `${props.position.left}px`
   };
-  </script>
+});
+</script>
   
   <style scoped>
 .popup {

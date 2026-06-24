@@ -7,21 +7,23 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'FullScreenPopup',
-  props: {
-    isVisible: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  methods: {
-    close() {
-      this.$emit('close');
-    },
-  },
-};
+<script setup>
+import { getCurrentInstance } from "vue";
+defineOptions({
+  name: 'FullScreenPopup'
+});
+const props = defineProps({
+  isVisible: {
+    type: Boolean,
+    default: false
+  }
+});
+const {
+  proxy
+} = getCurrentInstance();
+function close() {
+  proxy.$emit('close');
+}
 </script>
 
 <style scoped>

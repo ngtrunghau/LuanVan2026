@@ -1,7 +1,7 @@
 <template>
   <div class="main-Wrapper">
-    <pharmacyheader></pharmacyheader>
-    <pharmacysidebar></pharmacysidebar>
+    <adminheader></adminheader>
+    <adminsidebar></adminsidebar>
     <!-- Page Wrapper -->
     <div class="page-wrapper">
       <div class="content container-fluid">
@@ -207,120 +207,112 @@
       </div>
     </div>
   </div>
-  <pharmacymodel />
-  <pharmacydelete />
 </template>
-<script >
-
+<script setup>
+import { getCurrentInstance, onMounted, reactive, toRefs, watch } from "vue";
 import VueDatePicker from '@vuepic/vue-datepicker';
 import { sanPhamModel } from "@/models/sanPhamModel";
 import Treeselect from 'vue3-treeselect';
-import VueMultiselect from 'vue-multiselect'
+import VueMultiselect from 'vue-multiselect';
 import 'vue-multiselect/dist/vue-multiselect.css';
 import { Form, Field } from "vee-validate";
 import * as Yup from "yup";
 import { Modal } from 'bootstrap';
-import {notifyModel} from "@/models/notifyModel";
-
-export default {
-  components: {
-    VueDatePicker,
-    Treeselect,
-    VueMultiselect,
-    Form,
-    Field,
-  },
-  data() {
-    return {
-      title: "DANH SÁCH",
-      model: sanPhamModel.baseJson(),
-      currentPage: 1,
-      numberOfElement: 1,
-      perPage: 5,
-      pageOptions: [5, 10, 25, 50, 100],
-      totalRows: 1,
-      sortBy: 'age',
-      sortDesc: false,
-      theModal: null,
-      isView: false,
-      list: [],
-      listLoai: [],
-    };
-  },
-  name: "pharmacy/user",
-
-  created() {
-    this.getListLoai();
-    this.getData();
-  },
-  mounted() {
-    
-  },
-  
-  watch: {
-    perPage: {
-      deep: true,
-      handler(val){
-        this.getData();
-      }
-    },
-    currentPage: {
-      deep: true,
-      handler(val){
-        this.getData();
-      }
+import { notifyModel } from "@/models/notifyModel";
+defineOptions({
+  name: "admin/page"
+});
+const {
+  proxy
+} = getCurrentInstance();
+const state = reactive({
+  title: "DANH SÁCH",
+  model: sanPhamModel.baseJson(),
+  currentPage: 1,
+  numberOfElement: 1,
+  perPage: 5,
+  pageOptions: [5, 10, 25, 50, 100],
+  totalRows: 1,
+  sortBy: 'age',
+  sortDesc: false,
+  theModal: null,
+  isView: false,
+  list: [],
+  listLoai: []
+});
+const {
+  title,
+  model,
+  currentPage,
+  numberOfElement,
+  perPage,
+  pageOptions,
+  totalRows,
+  sortBy,
+  sortDesc,
+  theModal,
+  isView,
+  list,
+  listLoai
+} = toRefs(state);
+async function getListLoai() {
+  await proxy.$store.dispatch("loaiStore/getAll").then(res => {
+    if (res != null && res.code === 0) {
+      state.listLoai = res.data || [];
     }
-  },
-
-  methods: {
-    async getListLoai(){
-      await  this.$store.dispatch("loaiStore/getAll").then((res) =>{
-            if (res != null && res.code ===0) {
-              this.listLoai = res.data || [];
-            }
-      })
-    },
-    async getData() {
-      let params = {
-        start: this.currentPage,
-        limit: this.perPage,
-        sortBy: this.sortBy,
-      }
-      await this.$store.dispatch("sanPhamStore/getPagingParams", params ).then(res => {
-            if (res != null && res.code ===0) {
-              this.list = res.data.data
-              this.totalRows = res.data.totalRows
-              this.numberOfElement = res.data.data.length
-              this.list = this.list.map(user => {
-                return {
-                  ...user,
-                  categories: this.list.find(role => role.id === user.categoriesId) || null
-                };
-              });
-              console.log("LIST SAN PHAM: ", this.list);
-            }
-            this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+  });
+}
+async function getData() {
+  let params = {
+    start: state.currentPage,
+    limit: state.perPage,
+    sortBy: state.sortBy
+  };
+  await proxy.$store.dispatch("sanPhamStore/getPagingParams", params).then(res => {
+    if (res != null && res.code === 0) {
+      state.list = res.data.data;
+      state.totalRows = res.data.totalRows;
+      state.numberOfElement = res.data.data.length;
+      state.list = state.list.map(user => {
+        return {
+          ...user,
+          categories: state.list.find(role => role.id === user.categoriesId) || null
+        };
       });
-    },
-    
-    handleShowDeleteModal(id) {
-      this.model.id = id;
-      this.showDeleteModal = true;
-    },
-    async handleDelete() {
-      if (this.model.id != 0 && this.model.id != null && this.model.id) {
-        await this.$store.dispatch("sanPhamStore/delete", { 'id': this.model.id }).then((res) => {
-          if (res != null && res.code ===0) {
-            this.showDeleteModal = false;
-            this.getData();
-          }
-          this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-        });
+      console.log("LIST SAN PHAM: ", state.list);
+    }
+    proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+  });
+}
+function handleShowDeleteModal(id) {
+  state.model.id = id;
+  proxy.showDeleteModal = true;
+}
+async function handleDelete() {
+  if (state.model.id != 0 && state.model.id != null && state.model.id) {
+    await proxy.$store.dispatch("sanPhamStore/delete", {
+      'id': state.model.id
+    }).then(res => {
+      if (res != null && res.code === 0) {
+        proxy.showDeleteModal = false;
+        getData();
       }
-    },
-    
-
+      proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+    });
   }
-};
+}
+watch(() => state.perPage, val => {
+  getData();
+}, {
+  deep: true
+});
+watch(() => state.currentPage, val => {
+  getData();
+}, {
+  deep: true
+});
+onMounted(() => {});
+getListLoai();
+getData();
 </script>
 

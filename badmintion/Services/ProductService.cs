@@ -64,10 +64,21 @@ namespace badmintion.Services
             {
 
                 PagingModel<dynamic> result = new PagingModel<dynamic>();
-                var data = await _context.Products.Where(x => x.IsDeleted == false && x.CategoriesId == pagingParam.IdDonViCha).Skip(pagingParam.Skip).Take(pagingParam.Limit).ToListAsync();
+                var query = _context.Products
+                    .Where(x => x.IsDeleted == false && x.CategoriesId == pagingParam.IdDonViCha);
 
-                result.Data = data;
-                result.TotalRows =  data.Count();
+                if (pagingParam.MinPrice.HasValue)
+                {
+                    query = query.Where(x => x.Price >= pagingParam.MinPrice.Value);
+                }
+
+                if (pagingParam.MaxPrice.HasValue)
+                {
+                    query = query.Where(x => x.Price <= pagingParam.MaxPrice.Value);
+                }
+
+                result.TotalRows = await query.CountAsync();
+                result.Data = await query.Skip(pagingParam.Skip).Take(pagingParam.Limit).ToListAsync();
                 return result;
             }
             catch (ResponseMessageException e)

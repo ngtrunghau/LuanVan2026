@@ -13,7 +13,11 @@ export const httpClient = axios.create({
 httpClient.interceptors.response.use((response) => {
     return response;
 }, async (error) => {
-    return Promise.resolve({error});
+    if (error?.response?.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("auth-user");
+    }
+    return Promise.reject(error);
 });
 
 class ApiClient{
@@ -37,7 +41,7 @@ class ApiClient{
         try {
         //    console.log("LOG GET API CLIENT  ")
             const response = await this.getInstance().get(path + url);
-               return response.data;
+            return response.data;
         } catch (e) {
             return {
                 success: false,
@@ -52,8 +56,10 @@ class ApiClient{
             return response.data;
         } catch (e) {
             return {
-                resultString: e.toString(),
-                resultCode: "20"
+                success: false,
+                code: e?.response?.status || CLIENT_ERROR_CODE,
+                message: e?.response?.data?.message || e.message || "Không thể kết nối máy chủ",
+                detail: e?.response?.data
             };
         }
     }

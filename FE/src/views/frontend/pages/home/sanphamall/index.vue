@@ -13,14 +13,16 @@
     <footerHome></footerHome>
   </div>
 </template>
-<script>
-export default {
-  data() {
-    return {
-      title: "Pain Relief",
-      text: "Home",
-      text1: "Pain Relief",
-    };
-  },
-};
+<script setup>
+import { reactive, toRefs } from "vue";
+const state = reactive({
+  title: "Pain Relief",
+  text: "Home",
+  text1: "Pain Relief"
+});
+const {
+  title,
+  text,
+  text1
+} = toRefs(state);
 </script>

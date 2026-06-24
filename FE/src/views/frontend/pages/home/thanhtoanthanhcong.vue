@@ -46,44 +46,46 @@
     </div>
   </template>
   
-  <script>
-  export default {
-    name: 'SuccessPayment',
-    data() {
-      return {
-        orderInfo: null
-      }
-    },
-    created() {
-      // Lấy thông tin đơn hàng từ route query hoặc store
-      this.orderInfo = {
-        orderId: this.$route.query.orderId,
-        amount: this.$route.query.amount,
-        paymentMethod: 'VNPAY'
-      }
-      
-      
-      // Hoặc lấy từ Vuex store nếu bạn lưu ở đó
-      // this.orderInfo = this.$store.state.payment.lastOrder
-    },
-    methods: {
-      formatCurrency(value) {
-        return new Intl.NumberFormat('vi-VN', { 
-          style: 'currency', 
-          currency: 'VND' 
-        }).format(value || 0)
-      },
-      goToHome() {
-        this.$router.push('/')
-      },
-      goToOrderDetail() {
-        if (this.orderInfo?.orderId) {
-          this.$router.push(`/don-hang/${this.orderInfo.orderId}`)
-        }
-      }
-    }
+  <script setup>
+import { getCurrentInstance, reactive, toRefs } from "vue";
+defineOptions({
+  name: 'SuccessPayment'
+});
+const {
+  proxy
+} = getCurrentInstance();
+const state = reactive({
+  orderInfo: null
+});
+const {
+  orderInfo
+} = toRefs(state);
+function formatCurrency(value) {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND'
+  }).format(value || 0);
+}
+function goToHome() {
+  proxy.$router.push('/');
+}
+function goToOrderDetail() {
+  if (state.orderInfo?.orderId) {
+    proxy.$router.push(`/don-hang/${state.orderInfo.orderId}`);
   }
-  </script>
+}
+// Lấy thông tin đơn hàng từ route query hoặc store
+state.orderInfo = {
+  orderId: proxy.$route.query.orderId,
+  amount: proxy.$route.query.amount,
+  paymentMethod: proxy.$route.query.paymentMethod === 'cod'
+    ? 'Thanh toán khi nhận hàng'
+    : 'Chuyển khoản thủ công'
+};
+
+// Hoặc lấy từ Vuex store nếu bạn lưu ở đó
+// this.orderInfo = this.$store.state.payment.lastOrder
+</script>
   
   <style scoped>
   .payment-result-container {

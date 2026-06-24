@@ -1,11 +1,11 @@
 <template>
   <div class="main-Wrapper">
-    <pharmacyheader></pharmacyheader>
-    <pharmacysidebar></pharmacysidebar>
+    <adminheader></adminheader>
+    <adminsidebar></adminsidebar>
     <!-- Page Wrapper -->
     <div class="page-wrapper">
       <div class="content container-fluid">
-        <pharmacybreadcrumb2 :title="title" />
+        <adminbreadcrumb2 :title="title" />
         <div class="row">
           <div class="col-12">
             <div class="card">
@@ -281,198 +281,182 @@
       </div>
     </div>
   </div>
-  <pharmacymodel />
-  <pharmacydelete />
 </template>
-<script >
-
+<script setup>
+import { getCurrentInstance, onMounted, reactive, toRefs, watch } from "vue";
 import VueDatePicker from '@vuepic/vue-datepicker';
 import { khoModel } from "@/models/khoModel";
 import Treeselect from 'vue3-treeselect';
-import VueMultiselect from 'vue-multiselect'
+import VueMultiselect from 'vue-multiselect';
 import 'vue-multiselect/dist/vue-multiselect.css';
 import { Form, Field } from "vee-validate";
 import * as Yup from "yup";
 import { Modal } from 'bootstrap';
-import {notifyModel} from "@/models/notifyModel";
-
-export default {
-  components: {
-    VueDatePicker,
-    Treeselect,
-    VueMultiselect,
-    Form,
-    Field,
-  },
-  data() {
-    return {
-      title: "SẢN PHẨM TRONG KHO",
-      model: khoModel.baseJson(),
-      list: [],
-      listSP: [],
-      currentPage: 1,
-      numberOfElement: 1,
-      perPage: 5,
-      pageOptions: [ 5, 10, 25, 50, 100],
-      totalRows: 1,
-      sortBy: 'age',
-      sortDesc: false,
-      theModal: null,
-      isView: false,
-      itemFilter: {
-        userName : null,
-        unitRole : null
-      },
-    };
-  },
-  name: "pharmacy/user",
-
-  created() {
-    this.getListSanPham();
-    this.getData();
-  },
-  mounted() {
-    this.theModal = new Modal(document.getElementById('info_modal'));
-
-    this.$refs.ref_info_modal.addEventListener('hidden.bs.modal', event => {
-      this.model = khoModel.baseJson();
-      this.$refs.form.setFieldValue('unitRole', this.model.unitRole);
-    });
-    this.$refs.ref_delete.addEventListener('hidden.bs.modal', event => {
-      this.model = khoModel.baseJson();
-      this.$refs.form.setFieldValue('unitRole', this.model.unitRole);
-    });
-  },
-  setup() {
-    const schema = Yup.object().shape({
-      // userName: Yup.string().required("Tài khoản không được bỏ trống !"),
-      // name : Yup.string().required("Họ và tên không được bỏ trống !"),
-      // password : Yup.string().required("Mật khẩu không được bỏ trống !"),
-      // unitRole : Yup.mixed().required("Vai trò không được bỏ trống !"),
-    });
-
-    return {
-      schema
-    };
-  },
-  watch: {
-    perPage: {
-      deep: true,
-      handler(val){
-        this.getData();
-      }
-    },
-    currentPage: {
-      deep: true,
-      handler(val){
-        this.getData();
-      }
-    }
-  },
-
-  methods: {
-    handleClear() {
-      this.itemFilter = {
-        userName : null,
-        unitRole : null
-      }
-    },
-    handleSearch() {
-      this.getData();
-    },
-    async getData() {
-      let params = {
-        start: this.currentPage,
-        limit: this.perPage,
-        sortBy: this.sortBy,
-        userName: this.itemFilter.userName,
-        unitRole : this.itemFilter.unitRole,
-      }
-      await this.$store.dispatch("khoStore/getPagingParams", params ).then(res => {
-            if (res != null && res.code ===0) {
-              this.list = res.data.data
-              this.totalRows = res.data.totalRows
-              this.numberOfElement = res.data.data.length
-              this.list = this.list.map(u => {
-                return {
-                  ...u,
-                  product: this.listSP.find(k => k.id === u.productId) || null
-                };
-              });
-              console.log("LIST USER: ", this.list);
-              
-            }
-            this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-      });
-    },
-
-    async getListSanPham(){
-      await  this.$store.dispatch("sanPhamStore/getAll").then((res) =>{
-            if (res != null && res.code ===0) {
-              this.listSP = res.data || [];
-            }
-      })
-    },
-    async handleGetInfo(id) {
-      await this.$store.dispatch("khoStore/getById", {id : id}).then((res) => {
-        if (res != null && res.code ===0) {
-          this.model = khoModel.getJson(res.data);
-          // Tìm role phù hợp từ listSP
-          this.model.product = this.listSP.find(p => p.id === res.data.productId) || null;
-          this.$refs.form.setFieldValue('unitRole', res.data.productId);
-        }
-      });
-    },
-    handleShowDeleteModal(id) {
-      this.model.id = id;
-      this.showDeleteModal = true;
-    },
-    handleShowResetModal(id) {
-      this.model.id = id;
-      this.showResetModal = true;
-    },
-    async handleDelete() {
-      if (this.model.id != 0 && this.model.id != null && this.model.id) {
-        await this.$store.dispatch("khoStore/delete", { 'id': this.model.id }).then((res) => {
-          if (res != null && res.code ===0) {
-            this.showDeleteModal = false;
-            this.getData();
-          }
-          this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-        });
-      }
-    },
-    
-    async handleSubmit() {
-      this.model.productId = this.model.product.id
-      if (
-          this.model.id != 0 &&
-          this.model.id != null &&
-          this.model.id
-      ) {
-        await this.$store.dispatch("khoStore/update", this.model).then((res) => {
-          if (res != null && res.code ===0) {
-            this.getData();
-            this.model= khoModel.baseJson()
-            this.theModal.hide();
-          }
-          this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-        });
-      } else {
-        await this.$store.dispatch("khoStore/create", this.model).then((res) => {
-          if (res != null && res.code ===0) {
-            this.getData();
-            this.model= khoModel.baseJson()
-            this.theModal.hide();
-          }
-          this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-        });
-
-      }
-
-    },
-
+import { notifyModel } from "@/models/notifyModel";
+defineOptions({
+  name: "admin/page"
+});
+const {
+  proxy
+} = getCurrentInstance();
+const state = reactive({
+  title: "SẢN PHẨM TRONG KHO",
+  model: khoModel.baseJson(),
+  list: [],
+  listSP: [],
+  currentPage: 1,
+  numberOfElement: 1,
+  perPage: 5,
+  pageOptions: [5, 10, 25, 50, 100],
+  totalRows: 1,
+  sortBy: 'age',
+  sortDesc: false,
+  theModal: null,
+  isView: false,
+  itemFilter: {
+    userName: null,
+    unitRole: null
   }
-};
+});
+const {
+  title,
+  model,
+  list,
+  listSP,
+  currentPage,
+  numberOfElement,
+  perPage,
+  pageOptions,
+  totalRows,
+  sortBy,
+  sortDesc,
+  theModal,
+  isView,
+  itemFilter
+} = toRefs(state);
+const schema = Yup.object().shape({
+  // userName: Yup.string().required("Tài khoản không được bỏ trống !"),
+  // name : Yup.string().required("Họ và tên không được bỏ trống !"),
+  // password : Yup.string().required("Mật khẩu không được bỏ trống !"),
+  // unitRole : Yup.mixed().required("Vai trò không được bỏ trống !"),
+});
+function handleClear() {
+  state.itemFilter = {
+    userName: null,
+    unitRole: null
+  };
+}
+function handleSearch() {
+  getData();
+}
+async function getData() {
+  let params = {
+    start: state.currentPage,
+    limit: state.perPage,
+    sortBy: state.sortBy,
+    userName: state.itemFilter.userName,
+    unitRole: state.itemFilter.unitRole
+  };
+  await proxy.$store.dispatch("khoStore/getPagingParams", params).then(res => {
+    if (res != null && res.code === 0) {
+      state.list = res.data.data;
+      state.totalRows = res.data.totalRows;
+      state.numberOfElement = res.data.data.length;
+      state.list = state.list.map(u => {
+        return {
+          ...u,
+          product: state.listSP.find(k => k.id === u.productId) || null
+        };
+      });
+      console.log("LIST USER: ", state.list);
+    }
+    proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+  });
+}
+async function getListSanPham() {
+  await proxy.$store.dispatch("sanPhamStore/getAll").then(res => {
+    if (res != null && res.code === 0) {
+      state.listSP = res.data || [];
+    }
+  });
+}
+async function handleGetInfo(id) {
+  await proxy.$store.dispatch("khoStore/getById", {
+    id: id
+  }).then(res => {
+    if (res != null && res.code === 0) {
+      state.model = khoModel.getJson(res.data);
+      // Tìm role phù hợp từ listSP
+      state.model.product = state.listSP.find(p => p.id === res.data.productId) || null;
+      proxy.$refs.form.setFieldValue('unitRole', res.data.productId);
+    }
+  });
+}
+function handleShowDeleteModal(id) {
+  state.model.id = id;
+  proxy.showDeleteModal = true;
+}
+function handleShowResetModal(id) {
+  state.model.id = id;
+  proxy.showResetModal = true;
+}
+async function handleDelete() {
+  if (state.model.id != 0 && state.model.id != null && state.model.id) {
+    await proxy.$store.dispatch("khoStore/delete", {
+      'id': state.model.id
+    }).then(res => {
+      if (res != null && res.code === 0) {
+        proxy.showDeleteModal = false;
+        getData();
+      }
+      proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+    });
+  }
+}
+async function handleSubmit() {
+  state.model.productId = state.model.product.id;
+  if (state.model.id != 0 && state.model.id != null && state.model.id) {
+    await proxy.$store.dispatch("khoStore/update", state.model).then(res => {
+      if (res != null && res.code === 0) {
+        getData();
+        state.model = khoModel.baseJson();
+        state.theModal.hide();
+      }
+      proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+    });
+  } else {
+    await proxy.$store.dispatch("khoStore/create", state.model).then(res => {
+      if (res != null && res.code === 0) {
+        getData();
+        state.model = khoModel.baseJson();
+        state.theModal.hide();
+      }
+      proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+    });
+  }
+}
+watch(() => state.perPage, val => {
+  getData();
+}, {
+  deep: true
+});
+watch(() => state.currentPage, val => {
+  getData();
+}, {
+  deep: true
+});
+onMounted(() => {
+  state.theModal = new Modal(document.getElementById('info_modal'));
+  proxy.$refs.ref_info_modal.addEventListener('hidden.bs.modal', event => {
+    state.model = khoModel.baseJson();
+    proxy.$refs.form.setFieldValue('unitRole', state.model.unitRole);
+  });
+  proxy.$refs.ref_delete.addEventListener('hidden.bs.modal', event => {
+    state.model = khoModel.baseJson();
+    proxy.$refs.form.setFieldValue('unitRole', state.model.unitRole);
+  });
+});
+getListSanPham();
+getData();
 </script>
 

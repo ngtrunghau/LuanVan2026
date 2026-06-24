@@ -8,7 +8,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace badmintion.Controllers.CustomerController
 {
-    [Route("api/v1/Customer/[controller]")]
+    [Microsoft.AspNetCore.Authorization.Authorize]
+    [Route("api/Customer/[controller]")]
     public class CustomersController : DefaultReposityController<Customer>
     {
         private readonly ICustomerService _service;
@@ -19,6 +20,7 @@ namespace badmintion.Controllers.CustomerController
             _service = service;
         }
     
+        [Microsoft.AspNetCore.Authorization.AllowAnonymous]
         [HttpPost]
         [Route("create")]
         public async Task<IActionResult> Create([FromBody] CustomersDTO model)
@@ -64,6 +66,7 @@ namespace badmintion.Controllers.CustomerController
             }
         }
       
+        [Microsoft.AspNetCore.Authorization.AllowAnonymous]
         [HttpPost]
         [Route("login")]
         public async Task<IActionResult> Login([FromBody] CustomersDTO model)

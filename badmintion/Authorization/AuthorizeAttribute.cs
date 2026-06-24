@@ -16,37 +16,14 @@ namespace badmintion.Authorization
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true)]
     public class AuthorizeAttribute : Attribute, IAuthorizationFilter
     {
-        private readonly BadmintionNlContext _context = null;
-        private readonly DbSet<UnitRole> _unitRole;
-        private readonly DbSet<FunctionManage> _functionManage;
-
-        public AuthorizeAttribute()
-        {
-            var builder = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
-            IConfiguration _configuration = builder.Build();
-            var connectionString = _configuration.GetConnectionString("dbconn");
-
-            var services = new ServiceCollection();
-            services.AddDbContext<BadmintionNlContext>(options =>
-                options.UseSqlServer(connectionString));
-            var serviceProvider = services.BuildServiceProvider();
-
-            var _context = serviceProvider.GetRequiredService<BadmintionNlContext>();
-
-            _functionManage = _context.FunctionManages;
-
-        }
-
         public void OnAuthorization(AuthorizationFilterContext context)
         {
             var allowAnonymous = context.ActionDescriptor.EndpointMetadata.OfType<AllowAnonymousAttribute>().Any();
             if (allowAnonymous)
                 return;
 
-            var authHeader = context.HttpContext.Request.Headers["Authorization"].ToString();
-            if (!ValidateToken(authHeader))
+            var principal = context.HttpContext.User;
+            if (principal.Identity?.IsAuthenticated != true)
             {
                 context.Result = new JsonResult(
                     new ResultMessageResponse()
@@ -55,43 +32,48 @@ namespace badmintion.Authorization
                 );
                 return;
             }
-            var handler = new JwtSecurityTokenHandler();
-            var rawToken = authHeader.Replace("Bearer ", "").Trim();
-            var tokenS = handler.ReadJwtToken(rawToken);
-            int unitRole = Int32.Parse(tokenS.Claims.First(x => x.Type == ListActionDefault.UnitRoleIdString)?.Value);
-
-            if (unitRole == null)
+            var roleValue = principal.Claims
+                .FirstOrDefault(x => x.Type == ListActionDefault.UnitRoleIdString || x.Type == System.Security.Claims.ClaimTypes.Role)
+                ?.Value;
+            if (!int.TryParse(roleValue, out var unitRole))
             {
                 context.Result = new JsonResult(
                     new ResultMessageResponse()
                         .WithCode(DefaultCode.BEYOND_TIME)
                         .WithMessage("Hết thời gian truy cập vui lòng đăng nhập lại để xử lý tiếp!")
                 );
+                return;
+            }
+
+            if (unitRole == ListActionDefault.UnitRoleId)
+            {
                 return;
             }
                 
 
-            //UnitRole data = _unitRole.Find(x => !x.IsDeleted && x.Id == unitRole).FirstOrDefault();
-            List<FunctionManage> data = _functionManage.Where(x => x.UnitRoleId == unitRole && x.IsDeleted == false).Include(x => x.Controller).ToList();
+            var dbContext = context.HttpContext.RequestServices.GetRequiredService<BadmintionNlContext>();
+            List<FunctionManage> data = dbContext.FunctionManages
+                .Where(x => x.UnitRoleId == unitRole && x.IsDeleted == false)
+                .Include(x => x.Controller)
+                .ToList();
 
             if (data != null && data.Count > 0)
             {
-                var listAction = context.ActionDescriptor.AttributeRouteInfo.Template.Replace("api/v1/", "");
+                var listAction = context.ActionDescriptor.AttributeRouteInfo.Template.Replace("api/", "");
 
-                var action = listAction.Split("/");
+                var action = listAction.Split("/", StringSplitOptions.RemoveEmptyEntries);
+                var controllerName = action.Length >= 2 ? action[^2] : action[0];
+                var routerName = action.Length >= 1 ? action[^1] : string.Empty;
 
-                if (action != null && action[0] != null && action[1] != null)
+                if (!string.IsNullOrEmpty(controllerName) && !string.IsNullOrEmpty(routerName))
                 {
-                    foreach (var item in data)
-                    {
-                        var role = data.Find(x => x.Controller.Name == action[0] &&  x.Router == action[1]);
-                        if (role == null)
-                            context.Result = new JsonResult(
-                                new ResultMessageResponse()
-                                    .WithCode(DefaultCode.NOT_HAVE_ACCESS)
-                                    .WithMessage(DefaultMessage.NOT_HAVE_ACCESS)
-                            );
-                    }
+                    var role = data.Find(x => x.Controller.Name == controllerName && x.Router == routerName);
+                    if (role == null)
+                        context.Result = new JsonResult(
+                            new ResultMessageResponse()
+                                .WithCode(DefaultCode.NOT_HAVE_ACCESS)
+                                .WithMessage(DefaultMessage.NOT_HAVE_ACCESS)
+                        );
                   
 
                     
@@ -109,46 +91,5 @@ namespace badmintion.Authorization
 
         }
 
-        private static bool ValidateToken(string authToken)
-        {
-            try
-            {
-
-                if (authToken == null || authToken == default)
-                    return false;
-                authToken = authToken.Replace("Bearer ", "");
-                var tokenHandler = new JwtSecurityTokenHandler();
-                var validationParameters = GetValidationParameters();
-                SecurityToken validatedToken;
-                IPrincipal principal = tokenHandler.ValidateToken(authToken, validationParameters, out validatedToken);
-                var currentDate = DateTime.Now.ToLocalTime();
-                var validatedLocal = validatedToken.ValidTo.ToLocalTime();
-                if (validatedLocal < currentDate)
-                {
-                    return false;
-                }
-                return true;
-            }
-            catch (Exception e)
-            {
-
-            }
-
-            return false;
-        }
-
-        private static TokenValidationParameters GetValidationParameters()
-        {
-            return new TokenValidationParameters()
-            {
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes("my@longshen#secretkey&05092019585954394348588")),
-                ValidateIssuer = false,
-                ValidateAudience = false,
-                RequireExpirationTime = false,
-                ValidateLifetime = false,
-                ClockSkew = TimeSpan.Zero
-            };
-        }
     }
 }

@@ -1,11 +1,11 @@
 <template>
   <div class="main-Wrapper">
-    <pharmacyheader></pharmacyheader>
-    <pharmacysidebar></pharmacysidebar>
+    <adminheader></adminheader>
+    <adminsidebar></adminsidebar>
     <!-- Page Wrapper -->
     <div class="page-wrapper">
       <div class="content container-fluid">
-        <pharmacybreadcrumb2 :title="title" />
+        <adminbreadcrumb2 :title="title" />
         <div class="row">
           <div class="col-12">
             <div class="card">
@@ -507,190 +507,179 @@
       </div>
     </div>
   </div>
-  <pharmacymodel />
-  <pharmacydelete />
 </template>
-<script >
-
+<script setup>
+import { computed, getCurrentInstance, onMounted, reactive, toRefs, watch } from "vue";
 import VueDatePicker from '@vuepic/vue-datepicker';
 import { userCitizenModel } from "@/models/userCitizenModel";
 import Treeselect from 'vue3-treeselect';
-import VueMultiselect from 'vue-multiselect'
+import VueMultiselect from 'vue-multiselect';
 import 'vue-multiselect/dist/vue-multiselect.css';
 import { Form, Field } from "vee-validate";
 import * as Yup from "yup";
 import { Modal } from 'bootstrap';
-import {notifyModel} from "@/models/notifyModel";
-import Email from "vuelidate/lib/validators/email";
-
-export default {
-  computed: {
-    Email() {
-      return Email
-    }
-  },
-  components: {
-    VueDatePicker,
-    Treeselect,
-    Form,
-    Field,
-  },
-  data() {
-    return {
-      title: "DANH SÁCH",
-      model: userCitizenModel.baseJson(),
-      listUser: [],
-      listRole: [],
-      currentPage: 1,
-      numberOfElement: 1,
-      perPage: 10,
-      pageOptions: [ 10, 25, 50, 100],
-      totalRows: 1,
-      sortBy: 'age',
-      sortDesc: false,
-      theModal: null,
-      isView: false,
-      itemFilter: {
-        userName : null,
-        unitRole : null
-      },
-    };
-  },
-  name: "pharmacy/user",
-
-  created() {
-    this.getData();
-    this.getListRole();
-  },
-  mounted() {
-    this.theModal = new Modal(document.getElementById('info_user'));
-  },
-  setup() {
-    const schema = Yup.object().shape({
-      userName: Yup.string().required("Tài khoản không được bỏ trống !"),
-      name : Yup.string().required("Họ và tên không được bỏ trống !"),
-      email : Yup.string().required("Email không được bỏ trống !").email("Email không đúng định dạng !"),
-      password: Yup.string().required("Password không được bỏ trống !"),
-    });
-    return {
-      schema
-    };
-  },
-  watch: {
-    perPage: {
-      deep: true,
-      handler(val){
-        this.getData();
-      }
-    },
-    currentPage: {
-      deep: true,
-      handler(val){
-        this.getData();
-      }
-    }
-  },
-
-  methods: {
-    handleClear() {
-      this.itemFilter = {
-        userName : null,
-        unitRole : null
-      }
-    },
-    handleSearch() {
-      this.getData();
-    },
-    async getData() {
-      let params = {
-        start: this.currentPage,
-        limit: this.perPage,
-        sortBy: this.sortBy,
-        userName: this.itemFilter.userName,
-        unitRole : this.itemFilter.unitRole,
-      }
-      await this.$store.dispatch("userCitizenStore/getPagingParams", params ).then(res => {
-            if (res != null && res.code ===0) {
-              this.listUser = res.data.data
-              this.totalRows = res.data.totalRows
-              this.numberOfElement = res.data.data.length
-            }
-      });
-    },
-
-    async getListRole(){
-      await  this.$store.dispatch("unitRoleStore/getAll").then((res) =>{
-            if (res != null && res.code ===0) {
-              this.listRole = res.data || [];
-            }
-      })
-    },
-    async handleGetInfo(id) {
-      await this.$store.dispatch("userCitizenStore/getById", {id : id}).then((res) => {
-        if (res != null && res.code ===0) {
-          this.model = userCitizenModel.getJson(res.data);
-        }
-      });
-    },
-    handleShowDeleteModal(id) {
-      this.model.id = id;
-      this.showDeleteModal = true;
-    },
-    handleShowResetModal(id) {
-      this.model.id = id;
-      this.showResetModal = true;
-    },
-    async handleDelete() {
-      if (this.model.id != 0 && this.model.id != null && this.model.id) {
-        await this.$store.dispatch("userCitizenStore/delete", { 'id': this.model.id }).then((res) => {
-          if (res != null && res.code ===0) {
-            this.showDeleteModal = false;
-            this.getData();
-          }
-          this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-        });
-      }
-    },
-    async handleReset() {
-      if (this.model.id != 0 && this.model.id != null && this.model.id) {
-        await this.$store.dispatch("userCitizenStore/reset", { 'id': this.model.id }).then((res) => {
-          if (res != null && res.code ===0) {
-            this.showResetModal = false;
-            this.getData();
-          }
-          this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-        });
-      }
-    },
-    async handleSubmit() {
-      if (
-          this.model.id != 0 &&
-          this.model.id != null &&
-          this.model.id
-      ) {
-        await this.$store.dispatch("userCitizenStore/update", this.model).then((res) => {
-          if (res != null && res.code ===0) {
-            this.getData();
-            this.model= userCitizenModel.baseJson()
-            this.theModal.hide();
-          }
-          this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-        });
-      } else {
-        await this.$store.dispatch("userCitizenStore/create", this.model).then((res) => {
-          if (res != null && res.code ===0) {
-            this.getData();
-            this.model= userCitizenModel.baseJson()
-            this.theModal.hide();
-          }
-          this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-        });
-
-      }
-
-    },
-
+import { notifyModel } from "@/models/notifyModel";
+import EmailValidator from "vuelidate/lib/validators/email";
+defineOptions({
+  name: "admin/page"
+});
+const {
+  proxy
+} = getCurrentInstance();
+const state = reactive({
+  title: "DANH SÁCH",
+  model: userCitizenModel.baseJson(),
+  listUser: [],
+  listRole: [],
+  currentPage: 1,
+  numberOfElement: 1,
+  perPage: 10,
+  pageOptions: [10, 25, 50, 100],
+  totalRows: 1,
+  sortBy: 'age',
+  sortDesc: false,
+  theModal: null,
+  isView: false,
+  itemFilter: {
+    userName: null,
+    unitRole: null
   }
-};
+});
+const {
+  title,
+  model,
+  listUser,
+  listRole,
+  currentPage,
+  numberOfElement,
+  perPage,
+  pageOptions,
+  totalRows,
+  sortBy,
+  sortDesc,
+  theModal,
+  isView,
+  itemFilter
+} = toRefs(state);
+const schema = Yup.object().shape({
+  userName: Yup.string().required("Tài khoản không được bỏ trống !"),
+  name: Yup.string().required("Họ và tên không được bỏ trống !"),
+  email: Yup.string().required("Email không được bỏ trống !").email("Email không đúng định dạng !"),
+  password: Yup.string().required("Password không được bỏ trống !")
+});
+function handleClear() {
+  state.itemFilter = {
+    userName: null,
+    unitRole: null
+  };
+}
+function handleSearch() {
+  getData();
+}
+async function getData() {
+  let params = {
+    start: state.currentPage,
+    limit: state.perPage,
+    sortBy: state.sortBy,
+    userName: state.itemFilter.userName,
+    unitRole: state.itemFilter.unitRole
+  };
+  await proxy.$store.dispatch("userCitizenStore/getPagingParams", params).then(res => {
+    if (res != null && res.code === 0) {
+      state.listUser = res.data.data;
+      state.totalRows = res.data.totalRows;
+      state.numberOfElement = res.data.data.length;
+    }
+  });
+}
+async function getListRole() {
+  await proxy.$store.dispatch("unitRoleStore/getAll").then(res => {
+    if (res != null && res.code === 0) {
+      state.listRole = res.data || [];
+    }
+  });
+}
+async function handleGetInfo(id) {
+  await proxy.$store.dispatch("userCitizenStore/getById", {
+    id: id
+  }).then(res => {
+    if (res != null && res.code === 0) {
+      state.model = userCitizenModel.getJson(res.data);
+    }
+  });
+}
+function handleShowDeleteModal(id) {
+  state.model.id = id;
+  proxy.showDeleteModal = true;
+}
+function handleShowResetModal(id) {
+  state.model.id = id;
+  proxy.showResetModal = true;
+}
+async function handleDelete() {
+  if (state.model.id != 0 && state.model.id != null && state.model.id) {
+    await proxy.$store.dispatch("userCitizenStore/delete", {
+      'id': state.model.id
+    }).then(res => {
+      if (res != null && res.code === 0) {
+        proxy.showDeleteModal = false;
+        getData();
+      }
+      proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+    });
+  }
+}
+async function handleReset() {
+  if (state.model.id != 0 && state.model.id != null && state.model.id) {
+    await proxy.$store.dispatch("userCitizenStore/reset", {
+      'id': state.model.id
+    }).then(res => {
+      if (res != null && res.code === 0) {
+        proxy.showResetModal = false;
+        getData();
+      }
+      proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+    });
+  }
+}
+async function handleSubmit() {
+  if (state.model.id != 0 && state.model.id != null && state.model.id) {
+    await proxy.$store.dispatch("userCitizenStore/update", state.model).then(res => {
+      if (res != null && res.code === 0) {
+        getData();
+        state.model = userCitizenModel.baseJson();
+        state.theModal.hide();
+      }
+      proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+    });
+  } else {
+    await proxy.$store.dispatch("userCitizenStore/create", state.model).then(res => {
+      if (res != null && res.code === 0) {
+        getData();
+        state.model = userCitizenModel.baseJson();
+        state.theModal.hide();
+      }
+      proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+    });
+  }
+}
+const Email = computed(() => {
+  return EmailValidator;
+});
+watch(() => state.perPage, val => {
+  getData();
+}, {
+  deep: true
+});
+watch(() => state.currentPage, val => {
+  getData();
+}, {
+  deep: true
+});
+onMounted(() => {
+  state.theModal = new Modal(document.getElementById('info_user'));
+});
+getData();
+getListRole();
 </script>
 

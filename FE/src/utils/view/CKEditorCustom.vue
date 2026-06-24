@@ -4,43 +4,24 @@
     </ckeditor>
 </template>
 
-<script>
+<script setup>
 import ClassicEditor from "@/components/ckeditor5";
-import {defineComponent ,ref } from '@vue/runtime-core'
+import { defineComponent, ref } from '@vue/runtime-core';
 import { uploadImage } from "@/utils/functions/uploadImage";
 import { watch } from "vue";
-
-
-
-export default defineComponent ({
-
-  props :{
-     editorData : {
-      type : String ,
-      requied : true,
-     },
-  },
-
-  setup( {editorData}) {
-    function uploader(editor){
-      editor.plugins.get( 'FileRepository' ).createUploadAdapter = (loader) =>{
-        return uploadImage(loader);
-      };
-    }
-
-
-    const value = ref(editorData);
-    watch(value , (value) => {
-  //    console.log("LOG WATCH  : ", value);
-    });
-
-    return {
-      editor: ClassicEditor,
-      value,
-      editorConfig: {
-        extraPlugins : [uploader],
-      },
-    };
+const props = defineProps({
+  editorData: {
+    type: String,
+    requied: true
   }
-})
+});
+function uploader(editor) {
+  editor.plugins.get('FileRepository').createUploadAdapter = loader => {
+    return uploadImage(loader);
+  };
+}
+const value = ref(editorData);
+watch(value, value => {
+  //    console.log("LOG WATCH  : ", value);
+});
 </script>

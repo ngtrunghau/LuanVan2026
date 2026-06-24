@@ -10,6 +10,10 @@
 
         public int? OrdersId { get; set; }
 
+        public int? CustomerId { get; set; }
+
+        public string? Note { get; set; }
+
         public bool? IsDeleted { get; set; }
 
     }

@@ -1,7 +1,7 @@
 const path = require('path');
 const { defineConfig } = require('@vue/cli-service');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
-const url = process.env.VUE_WEB_URL ;
+const url = process.env.VUE_APP_URL || process.env.VUE_WEB_URL;
 
 
 
@@ -43,20 +43,14 @@ module.exports = defineConfig({
             from: path.resolve(__dirname, 'src/assets/admin/css'),
             to: path.resolve(__dirname, 'dist/admin/css'),
           },
-          {
-            from: path.resolve(__dirname, 'src/assets/pharmacy/css'),
-            to: path.resolve(__dirname, 'dist/pharmacy/css'),
-          },
         ],
       }),
     ],
   },
-    pluginOptions: {
-      sitemap: {
-        urls: [
-          url,
-        ]
-      }
+  pluginOptions: {
+    sitemap: {
+      urls: [url].filter(Boolean)
     }
+  }
 
 });

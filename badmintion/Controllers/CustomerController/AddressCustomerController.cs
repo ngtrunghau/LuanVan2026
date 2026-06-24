@@ -9,7 +9,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace badmintion.Controllers.CustomerController
 {
-    [Route("api/v1/Customer/[controller]")]
+    [Microsoft.AspNetCore.Authorization.Authorize]
+    [Route("api/Customer/[controller]")]
     public class AddressCustomerController : DefaultReposityController<AddressCustomer>
     {
         private readonly IAddressCustomerService _service;

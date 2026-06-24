@@ -1,6 +1,5 @@
 ﻿using badmintion.Contansts;
 using badmintion.Interface.Core;
-using badmintion.Interface.Others;
 using badmintion.Lib.Core.DefaultRepository;
 using badmintion.Lib.Core;
 using badmintion.Models;
@@ -9,7 +8,7 @@ using badmintion.DTO;
 
 namespace badmintion.Controllers.Core
 {
-    [Route("api/v1/[controller]")]
+    [Route("api/[controller]")]
     public class AuthController : Controller
     {
         private readonly IAuthService _service;

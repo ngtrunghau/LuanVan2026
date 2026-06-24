@@ -11,7 +11,7 @@ using badmintion.Authorization;
 namespace badmintion.Controllers
 {
     [Authorize]
-    [Route("api/v1/[controller]")]
+    [Route("api/[controller]")]
     public class HistoryImportController : DefaultReposityController<HistoryImport>
     {
         private readonly IHistoryImportService _service;

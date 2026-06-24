@@ -93,90 +93,79 @@
   </div>
 </template>
 
-<script>
-export default {
-  data() {
-    return {
-      cart: [],
-      defaultImage: require('@/assets/img/caulong/logo/logoNTH_removeBackground.png'),
-      isLoggedIn: false
-    };
-  },
-
-  computed: {
-    totalPrice() {
-      return this.cart.reduce((total, item) => total + item.price * item.quantity, 0);
-    }
-  },
-
-  methods: {
-    formatCurrency(value) {
-      return value ? value.toLocaleString("vi-VN") + "đ" : "0đ";
-    },
-
-    removeFromCart(index) {
-      const newCart = [...this.cart];
-      newCart.splice(index, 1);
-      this.updateCart(newCart);
-    },
-
-    updateQuantity(index, change) {
-      const newCart = [...this.cart];
-      const newQuantity = newCart[index].quantity + change;
-      
-      if (newQuantity > 0) {
-        newCart[index].quantity = newQuantity;
-        this.updateCart(newCart);
-      }
-    },
-
-    updateCart(cartData) {
-      // Cập nhật cả localStorage và auth-user nếu đã đăng nhập
-      localStorage.setItem("cart", JSON.stringify(cartData));
-      
-      if (this.isLoggedIn) {
-        const authUser = JSON.parse(localStorage.getItem('auth-user'));
-        if (authUser) {
-          authUser.cart = cartData;
-          localStorage.setItem('auth-user', JSON.stringify(authUser));
-        }
-      }
-      
-      this.cart = cartData;
-      window.dispatchEvent(new CustomEvent("cart-updated"));
-    },
-
-    checkout() {
-      this.$router.push('/checkout');
-    },
-
-    loadCart() {
-      // Kiểm tra người dùng đăng nhập
-      const authUser = JSON.parse(localStorage.getItem('auth-user'));
-      this.isLoggedIn = !!authUser;
-      
-      // Ưu tiên lấy giỏ hàng từ auth-user nếu có
-      if (authUser?.cart) {
-        this.cart = authUser.cart;
-      } else {
-        this.cart = JSON.parse(localStorage.getItem("cart")) || [];
-      }
-    },
-
-    handleImageError(e) {
-      e.target.src = this.defaultImage;
-    }
-  },
-
-  mounted() {
-    this.loadCart();
-    window.addEventListener('cart-updated', this.loadCart);
-  },
-
-  beforeUnmount() {
-    window.removeEventListener('cart-updated', this.loadCart);
+<script setup>
+import { computed, getCurrentInstance, onBeforeUnmount, onMounted, reactive, toRefs } from "vue";
+const {
+  proxy
+} = getCurrentInstance();
+const state = reactive({
+  cart: [],
+  defaultImage: require('@/assets/img/caulong/logo/logoNTH_removeBackground.png'),
+  isLoggedIn: false
+});
+const {
+  cart,
+  defaultImage,
+  isLoggedIn
+} = toRefs(state);
+function formatCurrency(value) {
+  return value ? value.toLocaleString("vi-VN") + "đ" : "0đ";
+}
+function removeFromCart(index) {
+  const newCart = [...state.cart];
+  newCart.splice(index, 1);
+  updateCart(newCart);
+}
+function updateQuantity(index, change) {
+  const newCart = [...state.cart];
+  const newQuantity = newCart[index].quantity + change;
+  if (newQuantity > 0) {
+    newCart[index].quantity = newQuantity;
+    updateCart(newCart);
   }
-};
+}
+function updateCart(cartData) {
+  // Cập nhật cả localStorage và auth-user nếu đã đăng nhập
+  localStorage.setItem("cart", JSON.stringify(cartData));
+  if (state.isLoggedIn) {
+    const authUser = JSON.parse(localStorage.getItem('auth-user'));
+    if (authUser) {
+      authUser.cart = cartData;
+      localStorage.setItem('auth-user', JSON.stringify(authUser));
+    }
+  }
+  state.cart = cartData;
+  window.dispatchEvent(new CustomEvent("cart-updated"));
+}
+function checkout() {
+  proxy.$router.push('/checkout');
+}
+function loadCart() {
+  // Kiểm tra người dùng đăng nhập
+  const authUser = JSON.parse(localStorage.getItem('auth-user'));
+  state.isLoggedIn = !!authUser;
+
+  // Ưu tiên lấy giỏ hàng từ auth-user nếu có
+  // Ưu tiên lấy giỏ hàng từ auth-user nếu có
+  if (authUser?.cart) {
+    state.cart = authUser.cart;
+  } else {
+    state.cart = JSON.parse(localStorage.getItem("cart")) || [];
+  }
+}
+function handleImageError(e) {
+  e.target.src = state.defaultImage;
+}
+const totalPrice = computed(() => {
+  return state.cart.reduce((total, item) => total + item.price * item.quantity, 0);
+});
+onMounted(() => {
+  loadCart();
+  window.addEventListener('cart-updated', loadCart);
+});
+onBeforeUnmount(() => {
+  window.removeEventListener('cart-updated', loadCart);
+});
 </script>
 
 <style scoped>

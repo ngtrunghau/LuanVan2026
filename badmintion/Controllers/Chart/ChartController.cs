@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace badmintion.Controllers.Chart
 {
-    [Route("api/v1/[controller]")]
+    [Route("api/[controller]")]
     public class ChartController : ControllerBase
     {
         private readonly IChartService _service;

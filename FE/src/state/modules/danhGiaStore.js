@@ -20,6 +20,15 @@ export const actions = {
     async getPagingParams({commit}, params) {
         return apiClient.post(controller +"/get-paging-params-core", params);
     },
+    async getModerationList({commit}, params) {
+        return apiClient.post(controller + "/moderation-list", params);
+    },
+    async moderate({commit}, params) {
+        return apiClient.post(controller + "/moderate", params);
+    },
+    async getApprovedByProduct({commit}, productId) {
+        return apiClient.get(controller + `/approved-by-product/${productId}`);
+    },
     async getPagingParamsById({commit}, params) {
         return apiClient.post("Customer/" + controller +"/get-product-by-id-category", params);
     },

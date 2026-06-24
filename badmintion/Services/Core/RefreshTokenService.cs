@@ -56,28 +56,38 @@ namespace badmintion.Services.Core
 
         public async Task<SecurityToken> CreateJwtSecurityToken(JwtSecurityTokenHandler tokenHandler, User user)
         {
-            var key = Encoding.ASCII.GetBytes(_jwtSettings.Secret);
+            var secret = _jwtSettings.Secret;
+            if (string.IsNullOrWhiteSpace(secret))
+            {
+                throw new InvalidOperationException("Thiếu cấu hình JwtSettings:Secret.");
+            }
+            var key = Encoding.ASCII.GetBytes(secret);
 
             var claims = new List<Claim>
             {
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Name, user.Id.ToString()),
                 new Claim(ClaimTypes.Role, user.UnitRoleId.ToString()),
+                new Claim("account_type", "admin"),
             };
 
             /*new Claim("UserName", userName),
             new Claim("Id", id),*/
 
 
+
+            var now = DateTime.UtcNow;
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.Add(_jwtSettings.TokenLifetime),
+                NotBefore = now,
+                IssuedAt = now,
+                Expires = now.Add(_jwtSettings.TokenLifetime),
                 SigningCredentials =
                     new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
 
             };
-
             var token =  tokenHandler.CreateToken(tokenDescriptor);
 
             return token;

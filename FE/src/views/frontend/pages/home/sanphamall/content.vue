@@ -2,7 +2,33 @@
   <div class="col-md-12 col-lg-12 col-xl-12">
     <div class="row align-items-center pb-3">
       <div class="col-md-4 col-12 d-md-block d-none custom-short-by">
-        <h3 class="title pharmacy-title">Sản phẩm</h3>
+        <h3 class="title product-title">Sản phẩm</h3>
+      </div>
+      <div class="col-md-8 col-12">
+        <div class="d-flex flex-wrap gap-2 justify-content-md-end">
+          <b-form-input
+            v-model.number="filterMinPrice"
+            type="number"
+            min="0"
+            placeholder="Giá từ"
+            class="form-control form-control-sm"
+            style="max-width: 140px;"
+          />
+          <b-form-input
+            v-model.number="filterMaxPrice"
+            type="number"
+            min="0"
+            placeholder="Giá đến"
+            class="form-control form-control-sm"
+            style="max-width: 140px;"
+          />
+          <b-button size="sm" variant="primary" @click="applyPriceFilter">
+            Lọc giá
+          </b-button>
+          <b-button size="sm" variant="outline-secondary" @click="resetPriceFilter">
+            Xóa lọc
+          </b-button>
+        </div>
       </div>
       <!-- <div class="col-md-8 col-12 d-md-block d-none custom-short-by">
         <div class="sort-by pb-3">
@@ -90,135 +116,141 @@
     </div>
   </div>
 </template>
-<script >
-import productall from "@/assets/json/pharmacy/productall.json";
+<script setup>
+import { computed, getCurrentInstance, onMounted, reactive, toRefs, watch } from "vue";
 import VueDatePicker from '@vuepic/vue-datepicker';
 import { sanPhamModel } from "@/models/sanPhamModel";
 import Treeselect from 'vue3-treeselect';
-import VueMultiselect from 'vue-multiselect'
+import VueMultiselect from 'vue-multiselect';
 import 'vue-multiselect/dist/vue-multiselect.css';
 import { Form, Field } from "vee-validate";
 import * as Yup from "yup";
 import { Modal } from 'bootstrap';
-import {notifyModel} from "@/models/notifyModel";
-
-export default {
-  components: {
-    VueDatePicker,
-    Treeselect,
-    VueMultiselect,
-    Form,
-    Field,
-  },
-  data() {
-    return {
-      title: "DANH SÁCH",
-      model: sanPhamModel.baseJson(),
-      currentPage: 1,
-      numberOfElement: 1,
-      perPage: 5,
-      pageOptions: [5, 10, 25, 50, 100],
-      totalRows: 1,
-      sortBy: 'age',
-      sortDesc: false,
-      theModal: null,
-      isView: false,
-      list: [],
-      listLoai: [],
-      productall: productall,
-    };
-  },
-  name: "pharmacy/user",
-
-  created() {
-    this.getListLoai();
-    // this.getData();
-  },
-  mounted() {
-    
-  },
-
-  computed: {
-    categoryId() {
-      return this.$route.params.id || null;
+import { notifyModel } from "@/models/notifyModel";
+defineOptions({
+  name: "admin/page"
+});
+const {
+  proxy
+} = getCurrentInstance();
+const state = reactive({
+  title: "DANH SÁCH",
+  model: sanPhamModel.baseJson(),
+  currentPage: 1,
+  numberOfElement: 1,
+  perPage: 5,
+  pageOptions: [5, 10, 25, 50, 100],
+  totalRows: 1,
+  sortBy: 'age',
+  sortDesc: false,
+  theModal: null,
+  isView: false,
+  list: [],
+  listLoai: [],
+  filterMinPrice: null,
+  filterMaxPrice: null
+});
+const {
+  title,
+  model,
+  currentPage,
+  numberOfElement,
+  perPage,
+  pageOptions,
+  totalRows,
+  sortBy,
+  sortDesc,
+  theModal,
+  isView,
+  list,
+  listLoai,
+  filterMinPrice,
+  filterMaxPrice
+} = toRefs(state);
+function formatCurrency(value) {
+  return value ? value.toLocaleString("vi-VN") + "đ" : "0đ";
+}
+async function getListLoai() {
+  await proxy.$store.dispatch("loaiStore/getAllCustomer").then(res => {
+    if (res != null && res.code === 0) {
+      state.listLoai = res.data || [];
     }
-  },
-  
-  watch: {
-    perPage: {
-      deep: true,
-      handler(val){
-        this.getData();
+  });
+}
+async function getData() {
+  let params = {
+    start: state.currentPage,
+    limit: state.perPage,
+    sortBy: state.sortBy,
+    idDonViCha: categoryId.value,
+    minPrice: state.filterMinPrice || null,
+    maxPrice: state.filterMaxPrice || null
+  };
+  await proxy.$store.dispatch("sanPhamStore/getPagingParamsById", params).then(res => {
+    if (res != null && res.code === 0) {
+      state.list = res.data.data;
+      state.totalRows = res.data.totalRows;
+      state.numberOfElement = res.data.data.length;
+      // this.list = this.list.map(user => {
+      //   return {
+      //     ...user,
+      //     categories: this.list.find(role => role.id === user.categoriesId) || null
+      //   };
+      // });
+      console.log("LIST SAN PHAM: ", state.list);
+    }
+  });
+}
+function handleShowDeleteModal(id) {
+  state.model.id = id;
+  proxy.showDeleteModal = true;
+}
+async function handleDelete() {
+  if (state.model.id != 0 && state.model.id != null && state.model.id) {
+    await proxy.$store.dispatch("sanPhamStore/delete", {
+      'id': state.model.id
+    }).then(res => {
+      if (res != null && res.code === 0) {
+        proxy.showDeleteModal = false;
+        getData();
       }
-    },
-    currentPage: {
-      deep: true,
-      handler(val){
-        this.getData();
-      }
-    },
-    '$route.params.id': {
-      handler(newId) {
-        this.currentPage = 1; // Reset về trang đầu tiên
-        this.getData();
-      },
-      immediate: true
-    },
-  },
-
-  methods: {
-    formatCurrency(value) {
-      return value ? value.toLocaleString("vi-VN") + "đ" : "0đ";
-    },
-    async getListLoai(){
-      await  this.$store.dispatch("loaiStore/getAllCustomer").then((res) =>{
-            if (res != null && res.code ===0) {
-              this.listLoai = res.data || [];
-            }
-      })
-    },
-    async getData() {
-      let params = {
-        start: this.currentPage,
-        limit: this.perPage,
-        sortBy: this.sortBy,
-        idDonViCha: this.categoryId // Thêm điều kiện lọc vào params gọi API
-      }
-      await this.$store.dispatch("sanPhamStore/getPagingParamsById", params ).then(res => {
-            if (res != null && res.code ===0) {
-              this.list = res.data.data
-              this.totalRows = res.data.totalRows
-              this.numberOfElement = res.data.data.length
-              // this.list = this.list.map(user => {
-              //   return {
-              //     ...user,
-              //     categories: this.list.find(role => role.id === user.categoriesId) || null
-              //   };
-              // });
-              console.log("LIST SAN PHAM: ", this.list);
-            }
-      });
-    },
-    
-    handleShowDeleteModal(id) {
-      this.model.id = id;
-      this.showDeleteModal = true;
-    },
-    async handleDelete() {
-      if (this.model.id != 0 && this.model.id != null && this.model.id) {
-        await this.$store.dispatch("sanPhamStore/delete", { 'id': this.model.id }).then((res) => {
-          if (res != null && res.code ===0) {
-            this.showDeleteModal = false;
-            this.getData();
-          }
-          this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-        });
-      }
-    },
-    
-
+      proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+    });
   }
-};
+}
+function applyPriceFilter() {
+  state.currentPage = 1;
+  getData();
+}
+function resetPriceFilter() {
+  state.filterMinPrice = null;
+  state.filterMaxPrice = null;
+  state.currentPage = 1;
+  getData();
+}
+const categoryId = computed(() => {
+  return proxy.$route.params.id || null;
+});
+watch(() => state.perPage, val => {
+  getData();
+}, {
+  deep: true
+});
+watch(() => state.currentPage, val => {
+  getData();
+}, {
+  deep: true
+});
+watch(() => proxy.$route.params.id, newId => {
+  state.currentPage = 1; // Reset về trang đầu tiên
+  // Reset về trang đầu tiên
+  getData();
+}, {
+  immediate: true
+});
+onMounted(() => {});
+getListLoai();
+// this.getData();
 </script>
 
 

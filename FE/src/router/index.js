@@ -20,7 +20,6 @@ import ThanhToanThanhCong from "@/views/frontend/pages/home/thanhtoanthanhcong.v
 import DonHang from "@/views/frontend/pages/home/donhang.vue";
 import DonHangChiTiet from "@/views/frontend/pages/home/donhangchitiet.vue";
 import ThongTinCaNhan from "@/views/frontend/pages/home/thongtincanhan.vue";
-import PatientSignup from "@/views/frontend/pages/home/patientSignup.vue";
 
 /**************** ADMIN  *************/
 
@@ -37,12 +36,16 @@ import QuanLyKhachHang from '@/views/admin/pages/khachHang/index.vue'
 import QuanLyDiaChi from '@/views/admin/pages/diaChi/index.vue'
 import QuanLyKho from '@/views/admin/pages/kho/index.vue'
 import QuanLyDatHang from '@/views/admin/pages/datHang/index.vue'
+import QuanLyKhuyenMai from '@/views/admin/pages/khuyenMai/index.vue'
+import CanhBaoTonKho from '@/views/admin/pages/canhBaoTonKho/index.vue'
+import QuanLyDanhGia from '@/views/admin/pages/danhGia/index.vue'
 import ChiTietVanChuyen from '@/views/admin/pages/vanchuyen/index.vue'
 
 import AdminLogin from '@/views/admin/pages/authentication/login.vue'
 import AdminRegister from '@/views/admin/pages/authentication/register.vue'
 import AdminForgotPassword from '@/views/admin/pages/authentication/forgotPassword.vue'
 import AdminLockScreen from '@/views/admin/pages/authentication/lockScreen.vue'
+import AdminChangePassword from '@/views/admin/pages/authentication/changePassword.vue'
 import AdminError404 from '@/views/admin/pages/404/error404.vue'
 
 
@@ -112,11 +115,6 @@ const routes = [
         path: '/dang-ky',
         name: 'dang-ky',
         component: DangKy,
-    },
-    {
-        path: '/patient-signup',
-        name: 'patient-signup',
-        component: PatientSignup,
     },
     {
         path: '/thanh-toan-thanh-cong',
@@ -236,6 +234,21 @@ const routes = [
         component: QuanLyDatHang
     },
     {
+        path: '/quan-tri/khuyen-mai',
+        name: '/quan-tri/khuyen-mai',
+        component: QuanLyKhuyenMai
+    },
+    {
+        path: '/quan-tri/canh-bao-ton-kho',
+        name: '/quan-tri/canh-bao-ton-kho',
+        component: CanhBaoTonKho
+    },
+    {
+        path: '/quan-tri/danh-gia',
+        name: '/quan-tri/danh-gia',
+        component: QuanLyDanhGia
+    },
+    {
         path: '/quan-tri/chi-tiet-van-chuyen',
         name: 'quan-tri/chi-tiet-van-chuyen',
         component: ChiTietVanChuyen
@@ -250,6 +263,11 @@ const routes = [
         path: '/quan-tri/tai-khoan',
         name: 'quan-tri/tai-khoan',
         component: User
+    },
+    {
+        path: '/quan-tri/doi-mat-khau',
+        name: 'quan-tri/doi-mat-khau',
+        component: AdminChangePassword
     },
 
     {
@@ -274,11 +292,71 @@ export  const router = createRouter({
 });
 
 
-router.beforeEach((to, from, next) => {
-// Scroll to the top of the page
-window.scrollTo({ top: 0, behavior: 'smooth' });
+const publicAdminRoutes = new Set([
+    '/quan-tri/login',
+    '/quan-tri/register',
+    '/quan-tri/forgot-password',
+    '/quan-tri/lock-screen',
+    '/quan-tri/error-404'
+]);
+const protectedCustomerRoutes = new Set([
+    '/thanh-toan',
+    '/don-hang',
+    '/thong-tin-ca-nhan'
+]);
 
-// Continue with the navigation
-next();
+function decodeToken(token) {
+    try {
+        const payload = token.split('.')[1];
+        return JSON.parse(decodeURIComponent(escape(atob(payload.replace(/-/g, '+').replace(/_/g, '/')))));
+    } catch {
+        return null;
+    }
+}
+
+function getSession() {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+
+    const payload = decodeToken(token);
+    const isExpired = !payload?.exp || payload.exp * 1000 <= Date.now();
+    if (isExpired) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('auth-user');
+        return null;
+    }
+
+    return {
+        token,
+        payload,
+        isCustomer: payload.account_type === 'customer' || payload.role === 'Customer'
+    };
+}
+
+router.beforeEach((to, from, next) => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    const session = getSession();
+    const isAdminRoute = to.path.startsWith('/quan-tri');
+    const isPublicAdminRoute = publicAdminRoutes.has(to.path);
+    const isProtectedCustomerRoute =
+        protectedCustomerRoutes.has(to.path) ||
+        to.path.startsWith('/don-hang/chi-tiet');
+
+    if (isAdminRoute && !isPublicAdminRoute) {
+        if (!session || session.isCustomer) {
+            return next({
+                path: '/quan-tri/login',
+                query: { redirect: to.fullPath }
+            });
+        }
+    }
+
+    if (isProtectedCustomerRoute && (!session || !session.isCustomer)) {
+        localStorage.setItem('redirect-after-login', to.fullPath);
+        return next('/login');
+    }
+
+    next();
 });
 

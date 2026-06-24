@@ -46,44 +46,44 @@
 
 </template>
 
-<script>
+<script setup>
+import { getCurrentInstance, reactive, toRefs } from "vue";
 import ProductSwiper from '@/views/frontend/pages/home/ProductSwiper.vue';
-
-export default {
-  components: {
-    ProductSwiper
-  },
-  data() {
-    return {
-      list: [],       // Danh sách sản phẩm
-      listLoai: [],   // Danh sách loại từ API
-    };
-  },
-  methods: {
-    // Lấy danh sách sản phẩm
-    async getData() {
-      await this.$store.dispatch("sanPhamStore/getAllCustomer").then(res => {
-        this.list = res.data || [];
-      });
-    },
-    
-    // Lấy danh sách loại
-    async getListLoai() {
-      await this.$store.dispatch("loaiStore/getAllCustomer").then((res) => {
-        if (res != null && res.code === 0) {
-          this.listLoai = res.data || [];
-        }
-      });
-    },
-    
-    // Lọc sản phẩm theo categoryId
-    getProductsByCategory(categoryId) {
-      return this.list.filter(item => item.categoriesId == categoryId);
-    }
-  },
-  created() {
-    this.getData();
-    this.getListLoai();
+const {
+  proxy
+} = getCurrentInstance();
+const state = reactive({
+  list: [],
+  // Danh sách sản phẩm
+  listLoai: [] // Danh sách loại từ API
+});
+const {
+  list,
+  listLoai
+} = toRefs(state);
+async function getData() {
+  try {
+    const res = await proxy.$store.dispatch("sanPhamStore/getAllCustomer");
+    state.list = res?.data || [];
+  } catch (error) {
+    state.list = [];
   }
-};
+}
+async function getListLoai() {
+  try {
+    const res = await proxy.$store.dispatch("loaiStore/getAllCustomer");
+    if (res?.code === 0) {
+      state.listLoai = res?.data || [];
+    } else {
+      state.listLoai = [];
+    }
+  } catch (error) {
+    state.listLoai = [];
+  }
+}
+function getProductsByCategory(categoryId) {
+  return state.list.filter(item => item.categoriesId == categoryId);
+}
+getData();
+getListLoai();
 </script>

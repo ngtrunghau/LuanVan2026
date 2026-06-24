@@ -1,11 +1,11 @@
 <template>
   <div class="main-Wrapper">
-    <pharmacyheader></pharmacyheader>
-    <pharmacysidebar></pharmacysidebar>
+    <adminheader></adminheader>
+    <adminsidebar></adminsidebar>
     <!-- Page Wrapper -->
     <div class="page-wrapper">
       <div class="content container-fluid">
-        <pharmacybreadcrumb2 :title="title" />
+        <adminbreadcrumb2 :title="title" />
         <div class="row">
           <div class="col-md-12">
             <div class="card">
@@ -143,150 +143,130 @@
       </div>
     </div>
   </div>
-  <pharmacymodel />
-  <pharmacydelete />
 </template>
-<script >
+<script setup>
+import { getCurrentInstance, reactive, toRefs, watch } from "vue";
 import axios from 'axios';
-import VueMultiselect from 'vue-multiselect'
+import VueMultiselect from 'vue-multiselect';
 import Loading from "vue3-loading-overlay";
 import Paginate from "vuejs-paginate-next";
 import 'vue-multiselect/dist/vue-multiselect.css';
-import Treeselect from 'vue3-treeselect'
-import {sanPhamModel} from "@/models/sanPhamModel";
+import Treeselect from 'vue3-treeselect';
+import { sanPhamModel } from "@/models/sanPhamModel";
 import VueDatePicker from '@vuepic/vue-datepicker';
-import '@vuepic/vue-datepicker/dist/main.css'
-import {notifyModel} from "@/models/notifyModel";
+import '@vuepic/vue-datepicker/dist/main.css';
+import { notifyModel } from "@/models/notifyModel";
 import CKEditorCustom from "@/utils/view/CKEditorCustom.vue";
-import {defineComponent ,ref } from '@vue/runtime-core';
+import { defineComponent, ref } from '@vue/runtime-core';
 import { Form, Field } from "vee-validate";
 import * as Yup from "yup";
-export default defineComponent ( {
-  components: {
-    Treeselect,
-    loading: Loading,
-    paginate: Paginate,
-    VueMultiselect,
-    VueDatePicker,
-    CKEditorCustom,
-    Form,
-    Field,
-  },
-  data() {
-
-    return {
-      title: "TẠO SẢN PHẨM",
-      treeView: [],
-      listMenuMobi: [],
-      listService: [],
-      model: sanPhamModel.baseJson(),
-      urlFile:`${process.env.VUE_APP_API_URL}files/view`,
-      url:`${process.env.VUE_APP_API_URL}files/view/`,
-      format : `dd/MM/yyyy`,
-      locale: 'vi',
-      listLoai: [],
-    };
-  },
-  name: "pharmacy/user",
-
-  created() {
-    this.getListLoai();
-
-  },
-
-  watch: {
-
-  },
-
-  setup() {
-      const schema = Yup.object().shape({
-          name: Yup.string().required("Tên không được bỏ trống !"),
-          
-      });
-      return {
-          schema,
-      };
-  },
-
-  methods: {
-    getAuthHeaders() {
-      const token = localStorage.getItem("token");
-      return token ? { Authorization: `Bearer ${token}` } : {};
-    },
-    addCoQuanToModel(node, instanceId ){
-      if(node.id){
-        this.model.menu = {id : node.id , name : node.name } ;
-       }
-    },
-    normalizer(node){
-        if(node.children == null || node.children == 'null'){
-            delete node.children;
-        }
-    },
-    async getListLoai(){
-        await  this.$store.dispatch("loaiStore/getAll").then((res) =>{
-                if (res != null && res.code ===0) {
-                this.listLoai = res.data || [];
-                }
-        })
-    },
-
-
-    async handleSubmit() {
-        this.model.categoriesId = this.model.categories.id
-      console.log("SUBMIT : ", );
-      await this.$store.dispatch("sanPhamStore/create", this.model).then((res) => {
-        if (res != null && res.code ===0) {
-            this.model= {}
-            this.$router.push('/quan-tri/quan-ly-san-pham')
-        }
-        this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-      });
-    },
-
-    getColorWithExtFile(ext) {
-        if (ext == '.png' || ext == '.jpg'|| ext == '.jpeg' )
-            return 'text-danger';
-
-        },
-    getIconWithExtFile(ext) {
-        if (ext == '.png' || ext == '.jpg'|| ext == '.jpeg')
-            return 'mdi mdi-file-image-outline';
-    },
-
-    deleteImage() {
-        if (this.model != null && this.model.icon != null) {
-            //console.log("LOG this.model : ", this.model)
-            axios.post(`${process.env.VUE_APP_API_URL}file/delete/${this.model.icon.fileId}`, null, {
-              headers: this.getAuthHeaders()
-            }).then((response) => {
-                this.model.icon = null;
-                // console.log('log model file remove', this.model.icon);
-            }).catch((error) => {
-                // Handle error here
-                //  console.error('Error deleting file:', error);
-            });
-        }
-    },
-    async upload() {
-        if ( event.target &&  event.target.files.length > 0 ) {
-        const formData = new FormData()
-        // formData.append('code', "ICON")
-        formData.append('files', event.target.files[0])
-        axios.post(`${process.env.VUE_APP_API_URL}File/upload`, formData, {
-          headers: this.getAuthHeaders()
-        }).then((response) => {
-            let resultData = response.data
-            if (response.data.code == 0){
-            this.model.imageUrl = resultData.data
-            console.log("LOG UPDATE : ", resultData.data);
-            }
-        })
-        }
-    },
-
-  }
+defineOptions({
+  name: "admin/page"
 });
+const {
+  proxy
+} = getCurrentInstance();
+const state = reactive({
+  title: "TẠO SẢN PHẨM",
+  treeView: [],
+  listMenuMobi: [],
+  listService: [],
+  model: sanPhamModel.baseJson(),
+  urlFile: `${process.env.VUE_APP_API_URL}files/view`,
+  url: `${process.env.VUE_APP_API_URL}files/view/`,
+  format: `dd/MM/yyyy`,
+  locale: 'vi',
+  listLoai: []
+});
+const {
+  title,
+  treeView,
+  listMenuMobi,
+  listService,
+  model,
+  urlFile,
+  url,
+  format,
+  locale,
+  listLoai
+} = toRefs(state);
+const schema = Yup.object().shape({
+  name: Yup.string().required("Tên không được bỏ trống !")
+});
+function getAuthHeaders() {
+  const token = localStorage.getItem("token");
+  return token ? {
+    Authorization: `Bearer ${token}`
+  } : {};
+}
+function addCoQuanToModel(node, instanceId) {
+  if (node.id) {
+    state.model.menu = {
+      id: node.id,
+      name: node.name
+    };
+  }
+}
+function normalizer(node) {
+  if (node.children == null || node.children == 'null') {
+    delete node.children;
+  }
+}
+async function getListLoai() {
+  await proxy.$store.dispatch("loaiStore/getAll").then(res => {
+    if (res != null && res.code === 0) {
+      state.listLoai = res.data || [];
+    }
+  });
+}
+async function handleSubmit() {
+  state.model.categoriesId = state.model.categories.id;
+  console.log("SUBMIT : ");
+  await proxy.$store.dispatch("sanPhamStore/create", state.model).then(res => {
+    if (res != null && res.code === 0) {
+      state.model = {};
+      proxy.$router.push('/quan-tri/quan-ly-san-pham');
+    }
+    proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+  });
+}
+function getColorWithExtFile(ext) {
+  if (ext == '.png' || ext == '.jpg' || ext == '.jpeg') return 'text-danger';
+}
+function getIconWithExtFile(ext) {
+  if (ext == '.png' || ext == '.jpg' || ext == '.jpeg') return 'mdi mdi-file-image-outline';
+}
+function deleteImage() {
+  if (state.model != null && state.model.icon != null) {
+    //console.log("LOG this.model : ", this.model)
+    axios.post(`${process.env.VUE_APP_API_URL}file/delete/${state.model.icon.fileId}`, null, {
+      headers: getAuthHeaders()
+    }).then(response => {
+      state.model.icon = null;
+      // console.log('log model file remove', this.model.icon);
+    }).catch(error => {
+      // Handle error here
+      //  console.error('Error deleting file:', error);
+    });
+  }
+}
+async function upload() {
+  if (event.target && event.target.files.length > 0) {
+    const formData = new FormData();
+    // formData.append('code', "ICON")
+    formData.append('files', event.target.files[0]);
+    axios.post(`${process.env.VUE_APP_API_URL}File/upload`, formData, {
+      headers: getAuthHeaders()
+    }).then(response => {
+      let resultData = response.data;
+      if (response.data.code == 0) {
+        state.model.imageUrl = resultData.data;
+        console.log("LOG UPDATE : ", resultData.data);
+      }
+    });
+  }
+}
+getListLoai();
 </script>
 <style>
 

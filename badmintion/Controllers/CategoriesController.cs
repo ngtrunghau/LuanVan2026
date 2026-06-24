@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace badmintion.Controllers
 {
-    [Route("api/v1/[controller]")]
+    [Route("api/[controller]")]
     [Authorize]
     public class CategoriesController : DefaultReposityController<Category>
     {

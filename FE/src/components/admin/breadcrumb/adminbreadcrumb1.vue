@@ -18,26 +18,26 @@
   </div>
   <!-- /Page Header -->
 </template>
-<script>
-export default {
-  computed: {
-    isHomeRoute() {
-      return this.$route.path === "/quan-tri";
-    },
+<script setup>
+import { computed, getCurrentInstance } from "vue";
+const props = defineProps({
+  title: {
+    type: String,
+    default: ""
   },
-  props: {
-    title: {
-      type: String,
-      default: "",
-    },
-    text: {
-      type: String,
-      default: "",
-    },
-    text1: {
-      type: String,
-      default: "",
-    },
+  text: {
+    type: String,
+    default: ""
   },
-};
+  text1: {
+    type: String,
+    default: ""
+  }
+});
+const {
+  proxy
+} = getCurrentInstance();
+const isHomeRoute = computed(() => {
+  return proxy.$route.path === "/quan-tri";
+});
 </script>

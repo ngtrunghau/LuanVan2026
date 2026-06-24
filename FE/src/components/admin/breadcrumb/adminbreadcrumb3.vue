@@ -22,25 +22,23 @@
   </div>
 </template>
 
-<script>
-export default {
-  props: {
-    title: {
-      type: String,
-      default: "",
-    },
-    text: {
-      type: String,
-      default: "",
-    },
-    text1: {
-      type: String,
-      default: "",
-    },
-    Add: {
-      type: String,
-      default: "",
-    },
+<script setup>
+const props = defineProps({
+  title: {
+    type: String,
+    default: ""
   },
-};
+  text: {
+    type: String,
+    default: ""
+  },
+  text1: {
+    type: String,
+    default: ""
+  },
+  Add: {
+    type: String,
+    default: ""
+  }
+});
 </script>

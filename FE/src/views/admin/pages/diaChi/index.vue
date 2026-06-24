@@ -1,7 +1,7 @@
 <template>
   <div class="main-Wrapper">
-    <pharmacyheader></pharmacyheader>
-    <pharmacysidebar></pharmacysidebar>
+    <adminheader></adminheader>
+    <adminsidebar></adminsidebar>
     <!-- Page Wrapper -->
     <div class="page-wrapper">
       <div class="content container-fluid">
@@ -359,256 +359,236 @@
       </div>
     </div>
   </div>
-  <pharmacymodel />
-  <pharmacydelete />
 </template>
-<script >
-
+<script setup>
+import { getCurrentInstance, onMounted, reactive, toRefs, watch } from "vue";
 import VueDatePicker from '@vuepic/vue-datepicker';
 import { diaChiModel } from "@/models/diaChiModel";
 import Treeselect from 'vue3-treeselect';
-import VueMultiselect from 'vue-multiselect'
+import VueMultiselect from 'vue-multiselect';
 import 'vue-multiselect/dist/vue-multiselect.css';
 import { Form, Field } from "vee-validate";
 import * as Yup from "yup";
 import { Modal } from 'bootstrap';
-import {notifyModel} from "@/models/notifyModel";
+import { notifyModel } from "@/models/notifyModel";
+defineOptions({
+  name: "admin/page"
+});
+const {
+  proxy
+} = getCurrentInstance();
+const state = reactive({
+  title: "DANH SÁCH",
+  model: diaChiModel.baseJson(),
+  currentPage: 1,
+  numberOfElement: 1,
+  perPage: 5,
+  pageOptions: [5, 10, 25, 50, 100],
+  totalRows: 1,
+  sortBy: 'age',
+  sortDesc: false,
+  theModal: null,
+  isView: false,
+  list: [],
+  listTinh: [],
+  listTP: [],
+  listPhuong: [],
+  listKH: [],
+  itemsDiaChi: {
+    customer: null,
+    province: null,
+    district: null,
+    town: null
+  }
+});
+const {
+  title,
+  model,
+  currentPage,
+  numberOfElement,
+  perPage,
+  pageOptions,
+  totalRows,
+  sortBy,
+  sortDesc,
+  theModal,
+  isView,
+  list,
+  listTinh,
+  listTP,
+  listPhuong,
+  listKH,
+  itemsDiaChi
+} = toRefs(state);
+const schema = Yup.object().shape({});
+async function getListTinh() {
+  await proxy.$store.dispatch("tinhStore/getAll").then(res => {
+    if (res != null && res.code === 0) {
+      state.listTinh = res.data || [];
+    }
+  });
+}
+async function getListTP(id) {
+  await proxy.$store.dispatch("huyenStore/getAll", {
+    id: id
+  }).then(res => {
+    state.listTP = res.data || [];
+  });
+}
+async function getListPhuong(id) {
+  await proxy.$store.dispatch("phuongStore/getAll", {
+    id: id
+  }).then(res => {
+    state.listPhuong = res.data || [];
+  });
+}
+async function getListKH() {
+  await proxy.$store.dispatch("khachHangStore/getAll").then(res => {
+    state.listKH = res.data || [];
+  });
+}
+async function getData() {
+  let params = {
+    start: state.currentPage,
+    limit: state.perPage,
+    sortBy: state.sortBy
+  };
+  await proxy.$store.dispatch("diaChiStore/getPagingParams", params).then(async res => {
+    if (res != null && res.code === 0) {
+      state.list = res.data.data;
+      state.totalRows = res.data.totalRows;
+      state.numberOfElement = res.data.data.length;
+      for (let user of state.list) {
+        // Lấy danh sách huyện theo tỉnh
+        await getListTP(user.provinceId);
+        // Gán huyện
+        user.district = state.listTP.find(huyen => huyen.id === user.districtId) || null;
 
-export default {
-  components: {
-    VueDatePicker,
-    Treeselect,
-    VueMultiselect,
-    Form,
-    Field,
-  },
-  data() {
-    return {
-      title: "DANH SÁCH",
-      model: diaChiModel.baseJson(),
-      currentPage: 1,
-      numberOfElement: 1,
-      perPage: 5,
-      pageOptions: [5, 10, 25, 50, 100],
-      totalRows: 1,
-      sortBy: 'age',
-      sortDesc: false,
-      theModal: null,
-      isView: false,
-      list: [],
-      listTinh: [],
-      listTP: [],
-      listPhuong: [],
-      listKH: [],
-      itemsDiaChi:{
-        customer: null,
-        province: null,
-        district: null,
-        town: null,
-      },
-    };
-  },
-  name: "pharmacy/user",
-
-  created() {
-    this.getListTinh();
-
-    this.getListKH();
-    this.getData();
-  },
-  mounted() {
-    this.theModal = new Modal(document.getElementById('info_modal'));
-
-
-
-    this.$refs.ref_info_modal.addEventListener('hidden.bs.modal', event => {
-      this.model = diaChiModel.baseJson()
-    });
-    this.$refs.ref_delete.addEventListener('hidden.bs.modal', event => {
-      this.model = diaChiModel.baseJson()
-    });
-  },
-  setup() {
-    const schema = Yup.object().shape({
-      
-    });
-    return {
-      schema
-    };
-  },
-  watch: {
-    perPage: {
-      deep: true,
-      handler(val){
-        this.getData();
-      }
-    },
-    currentPage: {
-      deep: true,
-      handler(val){
-        this.getData();
-      }
-    },
-    'itemsDiaChi.province': {
-        handler(val) {
-            if (val) {
-              this.itemsDiaChi.district = null; // Xóa huyện khi đổi tỉnh
-              this.itemsDiaChi.town = null; // Xóa phường khi đổi tỉnh
-                this.getListTP(val.id);
-            } else {
-                this.listTP = [];
-            }
-        },
-        deep: true
-    },
-    'itemsDiaChi.district': {
-        handler(val) {
-            if (val) {
-                this.itemsDiaChi.town = null; // Xóa phường khi đổi huyện
-                this.getListPhuong(val.id);
-            } else {
-                this.listPhuong = [];
-            }
-        },
-        deep: true
-    },
-  },
-
-  methods: {
-    async getListTinh(){
-      await  this.$store.dispatch("tinhStore/getAll").then((res) =>{
-            if (res != null && res.code ===0) {
-              this.listTinh = res.data || [];
-            }
-      })
-    },
-    async getListTP(id){
-        await  this.$store.dispatch("huyenStore/getAll", {id: id}).then((res) =>{
-            this.listTP = res.data || [];
-        })
-    },
-    async getListPhuong(id){
-        await  this.$store.dispatch("phuongStore/getAll", {id: id}).then((res) =>{
-            this.listPhuong = res.data || [];
-        })
-    },
-    async getListKH(){
-        await  this.$store.dispatch("khachHangStore/getAll").then((res) =>{
-            this.listKH = res.data || [];
-        })
-    },
-    async getData() {
-      let params = {
-        start: this.currentPage,
-        limit: this.perPage,
-        sortBy: this.sortBy,
-      };
-
-      await this.$store.dispatch("diaChiStore/getPagingParams", params).then(async (res) => {
-        if (res != null && res.code === 0) {
-          this.list = res.data.data;
-          this.totalRows = res.data.totalRows;
-          this.numberOfElement = res.data.data.length;
-
-          for (let user of this.list) {
-            // Lấy danh sách huyện theo tỉnh
-            await this.getListTP(user.provinceId);
-            // Gán huyện
-            user.district = this.listTP.find(huyen => huyen.id === user.districtId) || null;
-
-            // Lấy danh sách phường theo huyện
-            await this.getListPhuong(user.districtId);
-            // Gán phường
-            user.town = this.listPhuong.find(phuong => phuong.id === user.townId) || null;
-
-            // Gán tỉnh
-            user.province = this.listTinh.find(tinh => tinh.id === user.provinceId) || null;
-            // Gán khách hàng
-            user.customer = this.listKH.find(kh => kh.id === user.customerId) || null;
-          }
-
-          console.log("LIST KHÁCH HÀNG: ", this.list);
-        }
-        this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-      });
-    },
-    async handleGetInfo(id) {
-      const res = await this.$store.dispatch("diaChiStore/getById", { id: id });
-
-      if (res != null && res.code === 0) {
-        this.model = diaChiModel.getJson(res.data);
+        // Lấy danh sách phường theo huyện
+        await getListPhuong(user.districtId);
+        // Gán phường
+        user.town = state.listPhuong.find(phuong => phuong.id === user.townId) || null;
 
         // Gán tỉnh
-        this.itemsDiaChi.province = this.listTinh.find(tinh => tinh.id === res.data.provinceId) || null;
-        console.log("PROVINCE:", this.itemsDiaChi.province);
-
-        if (this.itemsDiaChi.province) {
-          await this.getListTP(this.itemsDiaChi.province.id); // Load danh sách huyện
-          this.itemsDiaChi.district = this.listTP.find(tp => tp.id === res.data.districtId) || null;
-          console.log("DISTRICT:", this.itemsDiaChi.district);
-        }
-
-        if (this.itemsDiaChi.district) {
-          await this.getListPhuong(this.itemsDiaChi.district.id); // Load danh sách phường
-          this.itemsDiaChi.town = this.listPhuong.find(p => p.id === res.data.townId) || null;
-          console.log("TOWN:", this.itemsDiaChi.town);
-        }
-
+        user.province = state.listTinh.find(tinh => tinh.id === user.provinceId) || null;
         // Gán khách hàng
-        this.itemsDiaChi.customer = this.listKH.find(kh => kh.id === res.data.customerId) || null;
-        console.log("CUSTOMER:", this.itemsDiaChi.customer);
+        user.customer = state.listKH.find(kh => kh.id === user.customerId) || null;
       }
-    },
+      console.log("LIST KHÁCH HÀNG: ", state.list);
+    }
+    proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+  });
+}
+async function handleGetInfo(id) {
+  const res = await proxy.$store.dispatch("diaChiStore/getById", {
+    id: id
+  });
+  if (res != null && res.code === 0) {
+    state.model = diaChiModel.getJson(res.data);
 
-    handleShowDeleteModal(id) {
-      this.model.id = id;
-      this.showDeleteModal = true;
-    },
-    async handleDelete() {
-      if (this.model.id != 0 && this.model.id != null && this.model.id) {
-        await this.$store.dispatch("diaChiStore/delete", { 'id': this.model.id }).then((res) => {
-          if (res != null && res.code ===0) {
-            this.showDeleteModal = false;
-            this.getData();
-          }
-          this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-        });
-      }
-    },
-    async handleSubmit() {
-      this.model.provinceId = this.itemsDiaChi.province.id
-      this.model.districtId = this.itemsDiaChi.district.id
-      this.model.townId = this.itemsDiaChi.town.id
-      this.model.customerId = this.itemsDiaChi.customer.id
+    // Gán tỉnh
+    state.itemsDiaChi.province = state.listTinh.find(tinh => tinh.id === res.data.provinceId) || null;
+    console.log("PROVINCE:", state.itemsDiaChi.province);
+    if (state.itemsDiaChi.province) {
+      await getListTP(state.itemsDiaChi.province.id); // Load danh sách huyện
+      state.itemsDiaChi.district = state.listTP.find(tp => tp.id === res.data.districtId) || null;
+      console.log("DISTRICT:", state.itemsDiaChi.district);
+    }
+    if (state.itemsDiaChi.district) {
+      await getListPhuong(state.itemsDiaChi.district.id); // Load danh sách phường
+      state.itemsDiaChi.town = state.listPhuong.find(p => p.id === res.data.townId) || null;
+      console.log("TOWN:", state.itemsDiaChi.town);
+    }
 
-      if (
-          this.model.id != 0 &&
-          this.model.id != null &&
-          this.model.id
-      ) {
-        await this.$store.dispatch("diaChiStore/update", this.model).then((res) => {
-          if (res != null && res.code ===0) {
-            this.getData();
-            this.model= diaChiModel.baseJson()
-            this.theModal.hide();
-          }
-          this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-        });
-      } else {
-        await this.$store.dispatch("diaChiStore/create", this.model).then((res) => {
-          if (res != null && res.code ===0) {
-            this.getData();
-            this.model= diaChiModel.baseJson()
-            this.theModal.hide();
-          }
-          this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-        });
-
-      }
-
-    },
-
+    // Gán khách hàng
+    state.itemsDiaChi.customer = state.listKH.find(kh => kh.id === res.data.customerId) || null;
+    console.log("CUSTOMER:", state.itemsDiaChi.customer);
   }
-};
+}
+function handleShowDeleteModal(id) {
+  state.model.id = id;
+  proxy.showDeleteModal = true;
+}
+async function handleDelete() {
+  if (state.model.id != 0 && state.model.id != null && state.model.id) {
+    await proxy.$store.dispatch("diaChiStore/delete", {
+      'id': state.model.id
+    }).then(res => {
+      if (res != null && res.code === 0) {
+        proxy.showDeleteModal = false;
+        getData();
+      }
+      proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+    });
+  }
+}
+async function handleSubmit() {
+  state.model.provinceId = state.itemsDiaChi.province.id;
+  state.model.districtId = state.itemsDiaChi.district.id;
+  state.model.townId = state.itemsDiaChi.town.id;
+  state.model.customerId = state.itemsDiaChi.customer.id;
+  if (state.model.id != 0 && state.model.id != null && state.model.id) {
+    await proxy.$store.dispatch("diaChiStore/update", state.model).then(res => {
+      if (res != null && res.code === 0) {
+        getData();
+        state.model = diaChiModel.baseJson();
+        state.theModal.hide();
+      }
+      proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+    });
+  } else {
+    await proxy.$store.dispatch("diaChiStore/create", state.model).then(res => {
+      if (res != null && res.code === 0) {
+        getData();
+        state.model = diaChiModel.baseJson();
+        state.theModal.hide();
+      }
+      proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+    });
+  }
+}
+watch(() => state.perPage, val => {
+  getData();
+}, {
+  deep: true
+});
+watch(() => state.currentPage, val => {
+  getData();
+}, {
+  deep: true
+});
+watch(() => state.itemsDiaChi.province, val => {
+  if (val) {
+    state.itemsDiaChi.district = null; // Xóa huyện khi đổi tỉnh
+    state.itemsDiaChi.town = null; // Xóa phường khi đổi tỉnh
+    getListTP(val.id);
+  } else {
+    state.listTP = [];
+  }
+}, {
+  deep: true
+});
+watch(() => state.itemsDiaChi.district, val => {
+  if (val) {
+    state.itemsDiaChi.town = null; // Xóa phường khi đổi huyện
+    getListPhuong(val.id);
+  } else {
+    state.listPhuong = [];
+  }
+}, {
+  deep: true
+});
+onMounted(() => {
+  state.theModal = new Modal(document.getElementById('info_modal'));
+  proxy.$refs.ref_info_modal.addEventListener('hidden.bs.modal', event => {
+    state.model = diaChiModel.baseJson();
+  });
+  proxy.$refs.ref_delete.addEventListener('hidden.bs.modal', event => {
+    state.model = diaChiModel.baseJson();
+  });
+});
+getListTinh();
+getListKH();
+getData();
 </script>
 

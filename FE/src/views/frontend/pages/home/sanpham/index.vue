@@ -6,7 +6,6 @@
       <div class="container">
         <div class="row">
           <div class="col-md-7 col-lg-9 col-xl-9">
-            <!-- Doctor Widget -->
             <div class="card">
               <div class="card-body product-description">
                 <div class="doctor-widget">
@@ -67,10 +66,7 @@
                 </div>
               </div>
             </div>
-            <!-- /Doctor Widget -->
-            <!-- Doctor Details Tab -->
             <SanPhamDetail :detail="this.model"></SanPhamDetail>
-            <!-- /Doctor Details Tab -->
           </div>
           <div class="col-md-5 col-lg-3 col-xl-3 theiaStickySidebar">
             <!-- Right Details -->
@@ -85,91 +81,65 @@
     <footerHome></footerHome>
   </div>
 </template>
-<script >
-  import Loading from "vue3-loading-overlay";
-  import Paginate from "vuejs-paginate-next";
-  import 'vue-multiselect/dist/vue-multiselect.css';
-  import Treeselect from 'vue3-treeselect'
-  import {sanPhamModel} from "@/models/sanPhamModel";
-  import '@vuepic/vue-datepicker/dist/main.css'
-  import {notifyModel} from "@/models/notifyModel";
-  import { Form, Field } from "vee-validate";
-  import * as Yup from "yup";
-
-  export default {
-    components: {
-        Treeselect,
-        loading: Loading,
-        paginate: Paginate,
-        Form,
-        Field,
-    },
-    data() {
-      return {
-        title: "CHI TIẾT SẢN PHẨM",
-        model: sanPhamModel.baseJson(),
-        urlFile:`${process.env.VUE_APP_API_URL}files/view/`,
-
-        listLoai: [],
-
-      };
-    },
-    name: "pharmacy/user",
-
-    created() {
-      this.getListLoai();
-      this.handleInfo();
-    },
-
-    watch: {
-
-    },
-
-    setup() {
-      const schema = Yup.object().shape({
-          name: Yup.string().required("Tên sản phẩm không được bỏ trống !"),
-          
-        });
-      return {
-          schema,
-      };
-    },
-
-    methods: {
-        async getListLoai(){
-            await  this.$store.dispatch("loaiStore/getAllCustomer").then((res) =>{
-                    if (res != null && res.code ===0) {
-                    this.listLoai = res.data || [];
-                    }
-            })
-        },
-      
-
-        async handleInfo() {
-            const params = {
-                id: this.$route.params.id
-            }
-            await this.$store.dispatch("sanPhamStore/getByIdCustomer", params).then((res) => {
-            //  console.log("ID: ", res);
-                if (res.code===0) {
-                    console.log(res)
-                    this.model = sanPhamModel.getJson(res.data);
-                    this.model.categories = this.listLoai.find(cat => cat.id === res.data.categoriesId) || null;
-                    // this.$refs.form.setFieldValue('fileImage', res.data.fileImage || null);
-                } else {
-                this.$store.dispatch("snackBarStore/addNotify", {
-                    message: res.message,
-                    code: res.code,
-                });
-                }
-            });
-        },
-
-
-
-      
-
+<script setup>
+import { getCurrentInstance, reactive, toRefs, watch } from "vue";
+import Loading from "vue3-loading-overlay";
+import Paginate from "vuejs-paginate-next";
+import 'vue-multiselect/dist/vue-multiselect.css';
+import Treeselect from 'vue3-treeselect';
+import { sanPhamModel } from "@/models/sanPhamModel";
+import '@vuepic/vue-datepicker/dist/main.css';
+import { notifyModel } from "@/models/notifyModel";
+import { Form, Field } from "vee-validate";
+import * as Yup from "yup";
+defineOptions({
+  name: "admin/page"
+});
+const {
+  proxy
+} = getCurrentInstance();
+const state = reactive({
+  title: "CHI TIẾT SẢN PHẨM",
+  model: sanPhamModel.baseJson(),
+  urlFile: `${process.env.VUE_APP_API_URL}files/view/`,
+  listLoai: []
+});
+const {
+  title,
+  model,
+  urlFile,
+  listLoai
+} = toRefs(state);
+const schema = Yup.object().shape({
+  name: Yup.string().required("Tên sản phẩm không được bỏ trống !")
+});
+async function getListLoai() {
+  await proxy.$store.dispatch("loaiStore/getAllCustomer").then(res => {
+    if (res != null && res.code === 0) {
+      state.listLoai = res.data || [];
     }
+  });
+}
+async function handleInfo() {
+  const params = {
+    id: proxy.$route.params.id
   };
+  await proxy.$store.dispatch("sanPhamStore/getByIdCustomer", params).then(res => {
+    //  console.log("ID: ", res);
+    if (res.code === 0) {
+      console.log(res);
+      state.model = sanPhamModel.getJson(res.data);
+      state.model.categories = state.listLoai.find(cat => cat.id === res.data.categoriesId) || null;
+      // this.$refs.form.setFieldValue('fileImage', res.data.fileImage || null);
+    } else {
+      proxy.$store.dispatch("snackBarStore/addNotify", {
+        message: res.message,
+        code: res.code
+      });
+    }
+  });
+}
+getListLoai();
+handleInfo();
 </script>
 

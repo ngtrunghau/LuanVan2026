@@ -16,6 +16,9 @@
 
         public int? IdDonViCha { get; set; } = null;
 
+        public decimal? MinPrice { get; set; }
+        public decimal? MaxPrice { get; set; }
+
 
         public int Skip
         {

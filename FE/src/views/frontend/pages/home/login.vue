@@ -121,119 +121,107 @@
     </div>
   </div>
 </template>
-<script>
-import {notifyModel} from "@/models/notifyModel";
+<script setup>
+import { computed, getCurrentInstance, onBeforeUnmount, onMounted, reactive, toRefs } from "vue";
+import { notifyModel } from "@/models/notifyModel";
 import * as Yup from "yup";
-import {Field, Form} from "vee-validate";
-
-export default {
-  components: {
-    Form,
-    Field,
+import { Field, Form } from "vee-validate";
+const {
+  proxy
+} = getCurrentInstance();
+const state = reactive({
+  showPassword: false,
+  password: null,
+  model: {
+    username: null,
+    password: null
   },
-  data() {
-    return {
-      showPassword: false,
-      password: null,
-      model:{
-        username: null,
-        password: null
-      },
-      loginRetry: null
-    };
-  },
-  setup() {
-    const schema = Yup.object().shape({
-      username: Yup.string().required("Tài khoản không được bỏ trống !"),
-      password: Yup.string().required("Mật khẩu không được bỏ trống !"),
-    });
-    return {
-      schema,
-    };
-  },
-  computed: {
-    buttonLabel() {
-      return this.showPassword ? "Hide" : "Show";
-    },
-  },
-  methods: {
-    toggleShow() {
-      this.showPassword = !this.showPassword;
-    },
-    
-    async submitForm() {
-      try {
-        const res = await this.$store.dispatch("khachHangStore/login", this.model);
-        
-        if (res && res.code === 0) {
-          // Lưu thông tin đăng nhập
-          localStorage.setItem('auth-user', JSON.stringify(res.data));
-          localStorage.setItem('token', res.data.accessToken);
-          if (window.axios) {
-            window.axios.defaults.headers.common.Authorization = `Bearer ${res.data.accessToken}`;
-          }
-          
-          // Đồng bộ giỏ hàng ngay lập tức
-          await this.syncCartAfterLogin();
-          
-          // Kiểm tra redirect sau khi đăng nhập
-          const redirectPath = localStorage.getItem("redirect-after-login") || "/";
-          localStorage.removeItem("redirect-after-login");
-          this.$router.push(redirectPath);
-        } else {
-          this.showNotification(res?.message || 'Đăng nhập thất bại', 'error');
-        }
-      } catch (error) {
-        console.error("Lỗi đăng nhập:", error);
-        this.showNotification('Đăng nhập thất bại, vui lòng thử lại', 'error');
+  loginRetry: null
+});
+const {
+  showPassword,
+  password,
+  model,
+  loginRetry
+} = toRefs(state);
+const schema = Yup.object().shape({
+  username: Yup.string().required("Tài khoản không được bỏ trống !"),
+  password: Yup.string().required("Mật khẩu không được bỏ trống !")
+});
+function toggleShow() {
+  state.showPassword = !state.showPassword;
+}
+async function submitForm() {
+  try {
+    const res = await proxy.$store.dispatch("khachHangStore/login", state.model);
+    if (res && res.code === 0) {
+      // Lưu thông tin đăng nhập
+      localStorage.setItem('auth-user', JSON.stringify(res.data));
+      localStorage.setItem('token', res.data.accessToken);
+      if (window.axios) {
+        window.axios.defaults.headers.common.Authorization = `Bearer ${res.data.accessToken}`;
       }
-    },
 
-    async syncCartAfterLogin() {
-      // Đợi 300ms để đảm bảo component giỏ hàng đã load
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Gọi syncCartOnLogin từ component giỏ hàng
-      if (window.$cartComponent?.syncCartOnLogin) {
-        await window.$cartComponent.syncCartOnLogin();
-      } else {
-        console.warn('Không tìm thấy component giỏ hàng');
-        
-        // Fallback: Tự xử lý đồng bộ nếu không có component
-        const guestCart = JSON.parse(localStorage.getItem("cart")) || [];
-        if (guestCart.length > 0) {
-          const authUser = JSON.parse(localStorage.getItem("auth-user"));
-          authUser.cart = [...(authUser.cart || []), ...guestCart];
-          localStorage.setItem("auth-user", JSON.stringify(authUser));
-          localStorage.removeItem("cart");
-        }
-      }
-    },
+      // Đồng bộ giỏ hàng ngay lập tức
+      await syncCartAfterLogin();
 
-    showNotification(message, type = 'success') {
-      // Sử dụng hệ thống thông báo của bạn
-      console[type === 'success' ? 'log' : 'error'](message);
-      
-      // Hoặc nếu dùng Vuex
-      if (this.$store && this.$store.dispatch) {
-        this.$store.dispatch("snackBarStore/addNotify", {
-          message: message,
-          variant: type
-        });
-      }
+      // Kiểm tra redirect sau khi đăng nhập
+      const redirectPath = localStorage.getItem("redirect-after-login") || "/";
+      localStorage.removeItem("redirect-after-login");
+      proxy.$router.push(redirectPath);
+    } else {
+      showNotification(res?.message || 'Đăng nhập thất bại', 'error');
     }
-  },
-  
-  mounted() {
-    this.loginRetry = null;
-  },
-  
-  beforeUnmount() {
-    if (this.loginRetry) {
-      clearTimeout(this.loginRetry);
+  } catch (error) {
+    console.error("Lỗi đăng nhập:", error);
+    showNotification('Đăng nhập thất bại, vui lòng thử lại', 'error');
+  }
+}
+async function syncCartAfterLogin() {
+  // Đợi 300ms để đảm bảo component giỏ hàng đã load
+  await new Promise(resolve => setTimeout(resolve, 300));
+
+  // Gọi syncCartOnLogin từ component giỏ hàng
+  // Gọi syncCartOnLogin từ component giỏ hàng
+  if (window.$cartComponent?.syncCartOnLogin) {
+    await window.$cartComponent.syncCartOnLogin();
+  } else {
+    console.warn('Không tìm thấy component giỏ hàng');
+
+    // Fallback: Tự xử lý đồng bộ nếu không có component
+    const guestCart = JSON.parse(localStorage.getItem("cart")) || [];
+    if (guestCart.length > 0) {
+      const authUser = JSON.parse(localStorage.getItem("auth-user"));
+      authUser.cart = [...(authUser.cart || []), ...guestCart];
+      localStorage.setItem("auth-user", JSON.stringify(authUser));
+      localStorage.removeItem("cart");
     }
   }
-};
+}
+function showNotification(message, type = 'success') {
+  // Sử dụng hệ thống thông báo của bạn
+  console[type === 'success' ? 'log' : 'error'](message);
+
+  // Hoặc nếu dùng Vuex
+  // Hoặc nếu dùng Vuex
+  if (proxy.$store && proxy.$store.dispatch) {
+    proxy.$store.dispatch("snackBarStore/addNotify", {
+      message: message,
+      variant: type
+    });
+  }
+}
+const buttonLabel = computed(() => {
+  return state.showPassword ? "Hide" : "Show";
+});
+onMounted(() => {
+  state.loginRetry = null;
+});
+onBeforeUnmount(() => {
+  if (state.loginRetry) {
+    clearTimeout(state.loginRetry);
+  }
+});
 </script>
 
 <style scoped>

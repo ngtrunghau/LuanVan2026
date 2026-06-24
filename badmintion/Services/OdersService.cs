@@ -1,6 +1,7 @@
 ﻿using badmintion.DTO;
+using badmintion.Contansts;
 using badmintion.Interface;
-using badmintion.Interface.Others;
+using badmintion.Interface.Core;
 using badmintion.Lib.Core;
 using badmintion.Lib.Core.DefaultRepository;
 using badmintion.Models;
@@ -13,11 +14,17 @@ namespace badmintion.Services
     public class OdersService : IOdersService
     {
         private readonly BadmintionNlContext _context;
-        private readonly IVnPayService _vnPay;
-        public OdersService(BadmintionNlContext context, IHttpContextAccessor contextAccessor, IVnPayService vnPay)
+        private readonly ICurrentUserService _currentUser;
+        private readonly IPromotionService _promotionService;
+        public OdersService(
+            BadmintionNlContext context,
+            IHttpContextAccessor contextAccessor,
+            ICurrentUserService currentUser,
+            IPromotionService promotionService)
         {
             _context = context;
-            _vnPay = vnPay;
+            _currentUser = currentUser;
+            _promotionService = promotionService;
         }
 
         public async Task<dynamic> Create(OrdersDTO model)
@@ -31,50 +38,138 @@ namespace badmintion.Services
                 if (!validationResult.IsValid)
                     throw new ResponseMessageException().WithValidationResult(validationResult);
 
+                var requestedItems = model.ListOrderItems
+                    .GroupBy(x => x.ProductsId!.Value)
+                    .Select(x => new
+                    {
+                        ProductId = x.Key,
+                        Quantity = x.Sum(i => i.Quantity ?? 0)
+                    })
+                    .ToList();
+                var productIds = requestedItems.Select(x => x.ProductId).ToList();
+                var products = await _context.Products
+                    .Where(x => productIds.Contains(x.Id) && x.IsDeleted == false)
+                    .ToDictionaryAsync(x => x.Id);
+
+                if (products.Count != productIds.Count)
+                    throw new ResponseMessageException().WithException(DefaultCode.DATA_NOT_FOUND);
+
+                foreach (var requested in requestedItems)
+                {
+                    var product = products[requested.ProductId];
+                    if (requested.Quantity <= 0 || (product.StockQuantity ?? 0) < requested.Quantity)
+                    {
+                        throw new ResponseMessageException()
+                            .WithCode(DefaultCode.EXCEPTION)
+                            .WithMessage($"Sản phẩm '{product.Name}' không đủ tồn kho.");
+                    }
+                }
+
+                const decimal shippingFee = 30_000m;
+                var calculatedSubtotal = requestedItems.Sum(x =>
+                    (products[x.ProductId].Price ?? 0m) * x.Quantity);
+                Promotion? promotion = null;
+                var discountAmount = 0m;
+                if (!string.IsNullOrWhiteSpace(model.PromotionCode))
+                {
+                    promotion = await _promotionService.GetValidPromotion(
+                        model.PromotionCode,
+                        calculatedSubtotal);
+                    if (promotion == null)
+                    {
+                        throw new ResponseMessageException()
+                            .WithCode(DefaultCode.ERROR_STRUCTURE)
+                            .WithMessage("Mã khuyến mãi không hợp lệ hoặc đã hết hạn.");
+                    }
+
+                    discountAmount = _promotionService.CalculateDiscount(
+                        promotion,
+                        calculatedSubtotal);
+                }
+
+                var calculatedTotal = calculatedSubtotal - discountAmount + shippingFee;
+                var paymentMethod = (model.PaymentMethod ?? "cod").Trim().ToLowerInvariant();
+                if (paymentMethod is not ("cod" or "bank"))
+                {
+                    throw new ResponseMessageException()
+                        .WithCode(DefaultCode.ERROR_STRUCTURE)
+                        .WithMessage("Phương thức thanh toán không hợp lệ.");
+                }
+
+                var customerId = _currentUser.IsCustomer
+                    ? _currentUser.UserId
+                    : model.CustomerId;
+                if (!customerId.HasValue)
+                    throw new ResponseMessageException().WithException(DefaultCode.NOT_HAVE_ACCESS);
+
+                var addressBelongsToCustomer = await _context.AddressCustomers.AnyAsync(x =>
+                    x.Id == model.AddressId &&
+                    x.CustomerId == customerId.Value &&
+                    x.IsDeleted == false);
+                if (!addressBelongsToCustomer)
+                    throw new ResponseMessageException().WithException(DefaultCode.NOT_HAVE_ACCESS);
+
+                await using var transaction = await _context.Database.BeginTransactionAsync();
                 var order = new Order()
                 {
                     OrderDate = DateTime.Now,
-                    TotalAmount = model.TotalAmount,
-                    Status = 1,
-                    CustomerId = model.CustomerId == null ? null : model.CustomerId,
+                    TotalAmount = calculatedTotal,
+                    Status = OrderStatus.Pending,
+                    CustomerId = customerId,
                     IsDeleted = model.IsDeleted == null ? false : model.IsDeleted,
-                    AddressId = model.AddressId
+                    AddressId = model.AddressId,
+                    PromotionId = promotion?.Id,
+                    DiscountAmount = discountAmount
                 };
                 await _context.Orders.AddAsync(order);
                 await _context.SaveChangesAsync();
-                foreach (var item in model.ListOrderItems)
+                foreach (var item in requestedItems)
                 {
                     var orderItem = new OrderItem()
                     {
                         Quantity = item.Quantity,
-                        Price = item.Price,
-                        ProductsId = item.ProductsId,
+                        Price = products[item.ProductId].Price ?? 0m,
+                        ProductsId = item.ProductId,
                         Orders = order.Id,
-                        IsDeleted = item.IsDeleted == null ? false : item.IsDeleted,
+                        IsDeleted = false,
                         
                     };
                     await _context.OrderItems.AddAsync(orderItem);
-                    await _context.SaveChangesAsync();
-
                 }
+                await _context.SaveChangesAsync();
                 var ship = new ShippingDetail()
                 {
                     IsDeleted = false,
-                    Status = 1,
+                    Status = OrderStatus.Pending,
                     OrdersId = order.Id,
                     DateShip = DateTime.Now,
+                    Note = "Đơn hàng đã được tạo.",
+                    ChangedBy = customerId.Value.ToString(),
+                    ChangedByType = _currentUser.IsCustomer ? "customer" : "admin",
                 };
                 await _context.ShippingDetails.AddAsync(ship);
                 await _context.SaveChangesAsync();
-                var money = Convert.ToDouble(model.TotalAmount);
-                var payment = await _vnPay.CreatePaymentUrl(money, order.Id);
-
-                var response = new ResponsePayment()
+                var paymentRecord = new Payment
                 {
-                    Url = payment,
+                    OrdersId = order.Id,
+                    PaymentMethod = paymentMethod,
+                    PaymentStatus = "pending",
+                    IsDeleted = false
+                };
+                await _context.Payments.AddAsync(paymentRecord);
+                if (promotion != null)
+                {
+                    promotion.UsedCount = (promotion.UsedCount ?? 0) + 1;
+                }
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
+                return new ResponsePayment
+                {
+                    Url = string.Empty,
                     OrderId = order.Id,
                 };
-                return response;
 
             }
             catch (ResponseMessageException e)
@@ -92,14 +187,32 @@ namespace badmintion.Services
             {
 
                 PagingModel<dynamic> result = new PagingModel<dynamic>();
-                var data = await _context.Orders.Where(x => x.IsDeleted == false && x.ShippingDetails.Any(x => x.Status == 1)).Include(x => x.ShippingDetails).Include(x => x.Address).ThenInclude(x => x.Town).ThenInclude(x => x.District).ThenInclude(x => x.Province).OrderByDescending(x => x.OrderDate).Include(x=>x.Customer).Include(x=>x.OrderItems).Skip(pagingParam.Skip).Take(pagingParam.Limit).Select(o => new
+                var data = await _context.Orders.Where(x =>
+                    x.IsDeleted == false &&
+                    (!_currentUser.IsCustomer || x.CustomerId == _currentUser.UserId) &&
+                    x.ShippingDetails
+                    .Where(s => s.IsDeleted == false)
+                    .OrderByDescending(s => s.DateShip)
+                    .ThenByDescending(s => s.Id)
+                    .Select(s => s.Status)
+                    .FirstOrDefault() == 1).Include(x => x.ShippingDetails).Include(x => x.Address).ThenInclude(x => x.Town).ThenInclude(x => x.District).ThenInclude(x => x.Province).OrderByDescending(x => x.OrderDate).Include(x=>x.Customer).Include(x=>x.OrderItems).Skip(pagingParam.Skip).Take(pagingParam.Limit).Select(o => new
                 {
                     o.Id,
                     o.TotalAmount,
                     o.OrderDate,
+                    Status = o.ShippingDetails
+                        .Where(s => s.IsDeleted == false)
+                        .OrderByDescending(s => s.DateShip)
+                        .ThenByDescending(s => s.Id)
+                        .Select(s => s.Status)
+                        .FirstOrDefault(),
                     o.Address,
                     o.Customer,
-                    o.ShippingDetails,
+                    ShippingDetails = o.ShippingDetails
+                        .Where(s => s.IsDeleted == false)
+                        .OrderByDescending(s => s.DateShip)
+                        .ThenByDescending(s => s.Id)
+                        .ToList(),
                     Items = o.OrderItems.Select(i => new
                     {
                         i.Id,
@@ -129,14 +242,32 @@ namespace badmintion.Services
             {
 
                 PagingModel<dynamic> result = new PagingModel<dynamic>();
-                var data = await _context.Orders.Where(x => x.IsDeleted == false && x.ShippingDetails.Any(x => x.Status == 2)).Include(x => x.ShippingDetails).Include(x => x.Address).ThenInclude(x => x.Town).ThenInclude(x => x.District).ThenInclude(x => x.Province).OrderByDescending(x => x.OrderDate).Include(x => x.Customer).Include(x => x.OrderItems).Skip(pagingParam.Skip).Take(pagingParam.Limit).Select(o => new
+                var data = await _context.Orders.Where(x =>
+                    x.IsDeleted == false &&
+                    (!_currentUser.IsCustomer || x.CustomerId == _currentUser.UserId) &&
+                    x.ShippingDetails
+                    .Where(s => s.IsDeleted == false)
+                    .OrderByDescending(s => s.DateShip)
+                    .ThenByDescending(s => s.Id)
+                    .Select(s => s.Status)
+                    .FirstOrDefault() == 2).Include(x => x.ShippingDetails).Include(x => x.Address).ThenInclude(x => x.Town).ThenInclude(x => x.District).ThenInclude(x => x.Province).OrderByDescending(x => x.OrderDate).Include(x => x.Customer).Include(x => x.OrderItems).Skip(pagingParam.Skip).Take(pagingParam.Limit).Select(o => new
                 {
                     o.Id,
                     o.TotalAmount,
                     o.OrderDate,
+                    Status = o.ShippingDetails
+                        .Where(s => s.IsDeleted == false)
+                        .OrderByDescending(s => s.DateShip)
+                        .ThenByDescending(s => s.Id)
+                        .Select(s => s.Status)
+                        .FirstOrDefault(),
                     o.Address,
                     o.Customer,
-                    o.ShippingDetails,
+                    ShippingDetails = o.ShippingDetails
+                        .Where(s => s.IsDeleted == false)
+                        .OrderByDescending(s => s.DateShip)
+                        .ThenByDescending(s => s.Id)
+                        .ToList(),
                     Items = o.OrderItems.Select(i => new
                     {
                         i.Id,
@@ -166,14 +297,32 @@ namespace badmintion.Services
             {
 
                 PagingModel<dynamic> result = new PagingModel<dynamic>();
-                var data = await _context.Orders.Where(x => x.IsDeleted == false && x.ShippingDetails.Any(x => x.Status == 3 )).Include(x => x.ShippingDetails).Include(x => x.Address).ThenInclude(x => x.Town).ThenInclude(x => x.District).ThenInclude(x => x.Province).OrderByDescending(x => x.OrderDate).Include(x => x.Customer).Include(x => x.OrderItems).Skip(pagingParam.Skip).Take(pagingParam.Limit).Select(o => new
+                var data = await _context.Orders.Where(x =>
+                    x.IsDeleted == false &&
+                    (!_currentUser.IsCustomer || x.CustomerId == _currentUser.UserId) &&
+                    x.ShippingDetails
+                    .Where(s => s.IsDeleted == false)
+                    .OrderByDescending(s => s.DateShip)
+                    .ThenByDescending(s => s.Id)
+                    .Select(s => s.Status)
+                    .FirstOrDefault() == 3).Include(x => x.ShippingDetails).Include(x => x.Address).ThenInclude(x => x.Town).ThenInclude(x => x.District).ThenInclude(x => x.Province).OrderByDescending(x => x.OrderDate).Include(x => x.Customer).Include(x => x.OrderItems).Skip(pagingParam.Skip).Take(pagingParam.Limit).Select(o => new
                 {
                     o.Id,
                     o.TotalAmount,
                     o.OrderDate,
+                    Status = o.ShippingDetails
+                        .Where(s => s.IsDeleted == false)
+                        .OrderByDescending(s => s.DateShip)
+                        .ThenByDescending(s => s.Id)
+                        .Select(s => s.Status)
+                        .FirstOrDefault(),
                     o.Address,
                     o.Customer,
-                    o.ShippingDetails,
+                    ShippingDetails = o.ShippingDetails
+                        .Where(s => s.IsDeleted == false)
+                        .OrderByDescending(s => s.DateShip)
+                        .ThenByDescending(s => s.Id)
+                        .ToList(),
                     Items = o.OrderItems.Select(i => new
                     {
                         i.Id,
@@ -203,14 +352,34 @@ namespace badmintion.Services
             {
 
      
-                var data = await _context.Orders.Where(x => x.IsDeleted == false && x.Id == id).Include(x => x.ShippingDetails).Include(x => x.Address).ThenInclude(x => x.Town).ThenInclude(x => x.District).ThenInclude(x => x.Province).OrderByDescending(x => x.OrderDate).Include(x => x.Customer).Include(x => x.OrderItems).Select(o => new
+                var data = await _context.Orders.Where(x =>
+                    x.IsDeleted == false &&
+                    x.Id == id &&
+                    (!_currentUser.IsCustomer || x.CustomerId == _currentUser.UserId)).Include(x => x.ShippingDetails).Include(x => x.Address).ThenInclude(x => x.Town).ThenInclude(x => x.District).ThenInclude(x => x.Province).OrderByDescending(x => x.OrderDate).Include(x => x.Customer).Include(x => x.OrderItems).Select(o => new
                 {
                     o.Id,
                     o.TotalAmount,
+                    o.DiscountAmount,
                     o.OrderDate,
                     o.Address,
                     o.Customer,
                     o.TxnRef,
+                    Payments = o.Payments
+                        .Where(x => x.IsDeleted == false)
+                        .OrderByDescending(x => x.Id)
+                        .Select(x => new
+                        {
+                            x.PaymentMethod,
+                            x.PaymentStatus,
+                            x.BillId
+                        })
+                        .ToList(),
+                    Status = o.ShippingDetails
+                        .Where(x => x.IsDeleted == false)
+                        .OrderByDescending(x => x.DateShip)
+                        .ThenByDescending(x => x.Id)
+                        .Select(x => x.Status)
+                        .FirstOrDefault(),
                     Items = o.OrderItems.Select(i => new
                     {
                         i.Id,
@@ -218,7 +387,17 @@ namespace badmintion.Services
                         i.Quantity,
                         i.Price
                     }).ToList(),
-                    ShippingDetail = o.ShippingDetails.Where(x => x.Status == 1).ToList(),
+                    ShippingDetail = o.ShippingDetails
+                        .Where(x => x.IsDeleted == false)
+                        .OrderByDescending(x => x.DateShip)
+                        .ThenByDescending(x => x.Id)
+                        .Take(1)
+                        .ToList(),
+                    OrderLogs = o.ShippingDetails
+                        .Where(x => x.IsDeleted == false)
+                        .OrderByDescending(x => x.DateShip)
+                        .ThenByDescending(x => x.Id)
+                        .ToList(),
                 }).FirstOrDefaultAsync();
 
            
@@ -279,14 +458,32 @@ namespace badmintion.Services
             {
 
                 PagingModel<dynamic> result = new PagingModel<dynamic>();
-                var data = await _context.Orders.Where(x => x.IsDeleted == false && x.Customer.Id == pagingParam.IdDonViCha && x.ShippingDetails.Any(x => x.Status == 3)).Include(x => x.ShippingDetails).Include(x => x.Address).ThenInclude(x => x.Town).ThenInclude(x => x.District).ThenInclude(x => x.Province).OrderByDescending(x => x.OrderDate).Include(x => x.Customer).Include(x => x.OrderItems).Skip(pagingParam.Skip).Take(pagingParam.Limit).Select(o => new
+                var requestedCustomerId = _currentUser.IsCustomer
+                    ? _currentUser.UserId
+                    : pagingParam.IdDonViCha;
+                var data = await _context.Orders.Where(x => x.IsDeleted == false && x.Customer.Id == requestedCustomerId && x.ShippingDetails
+                    .Where(s => s.IsDeleted == false)
+                    .OrderByDescending(s => s.DateShip)
+                    .ThenByDescending(s => s.Id)
+                    .Select(s => s.Status)
+                    .FirstOrDefault() == 3).Include(x => x.ShippingDetails).Include(x => x.Address).ThenInclude(x => x.Town).ThenInclude(x => x.District).ThenInclude(x => x.Province).OrderByDescending(x => x.OrderDate).Include(x => x.Customer).Include(x => x.OrderItems).Skip(pagingParam.Skip).Take(pagingParam.Limit).Select(o => new
                 {
                     o.Id,
                     o.TotalAmount,
                     o.OrderDate,
+                    Status = o.ShippingDetails
+                        .Where(s => s.IsDeleted == false)
+                        .OrderByDescending(s => s.DateShip)
+                        .ThenByDescending(s => s.Id)
+                        .Select(s => s.Status)
+                        .FirstOrDefault(),
                     o.Address,
                     o.Customer,
-                    o.ShippingDetails,
+                    ShippingDetails = o.ShippingDetails
+                        .Where(s => s.IsDeleted == false)
+                        .OrderByDescending(s => s.DateShip)
+                        .ThenByDescending(s => s.Id)
+                        .ToList(),
                     Items = o.OrderItems.Select(i => new
                     {
                         i.Id,

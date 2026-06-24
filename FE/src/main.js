@@ -15,7 +15,7 @@ import Treeselect from 'vue3-treeselect'
 import { TreeView } from "vue-tree-view";
 import VueMultiselect from 'vue-multiselect'
 
-import { FileUpload } from 'primevue/fileupload';
+import FileUpload from 'primevue/fileupload';
 import { RootTree } from "vue3-jstree-component"
 
 
@@ -38,9 +38,7 @@ import MobiBreadcrumb from '@/components/frontend/breadcrumb/mobi.vue'
 
 
 import Breadcrumb1 from '@/components/frontend/breadcrumb/breadcrumb1.vue'
-import Mainmenu from '@/components/frontend/mainmenu.vue'
 import Mainnav from '@/components/frontend/mainnav.vue'
-import Profilewidget from '@/components/frontend/profilewidget.vue'
 
 
 //pages
@@ -63,17 +61,12 @@ import SanPhamVot from '@/views/frontend/pages/home/sanphamvot/content.vue'
 import SanPhamAll from '@/views/frontend/pages/home/sanphamall/content.vue'
 /***********************************************************************/
 
-//pharmacy breadcrumb
-import PharmacyBreadCrumb from '@/components/admin/breadcrumb/adminbreadcrumb.vue'
-import PharmacyBreadCrumb1 from '@/components/admin/breadcrumb/adminbreadcrumb1.vue'
-import PharmacyBreadCrumb2 from '@/components/admin/breadcrumb/adminbreadcrumb2.vue'
-//pharmacy model
-import pharmacymodel from '@/components/admin/model/adminmodel.vue'
-import PharmacyDelete from '@/components/admin/admindelete.vue'
-
-//pharmacy components
-import PharmacyHeader from '@/views/admin/layouts/adminheader.vue'
-import PharmacySidebar from '@/views/admin/layouts/adminsidebar.vue'
+// Admin shared components
+import AdminBreadcrumb from '@/components/admin/breadcrumb/adminbreadcrumb.vue'
+import AdminBreadcrumb1 from '@/components/admin/breadcrumb/adminbreadcrumb1.vue'
+import AdminBreadcrumb2 from '@/components/admin/breadcrumb/adminbreadcrumb2.vue'
+import AdminHeader from '@/views/admin/layouts/adminheader.vue'
+import AdminSidebar from '@/views/admin/layouts/adminsidebar.vue'
 
 
 
@@ -123,9 +116,7 @@ app.component('breadcrumb1',Breadcrumb1)
 
 
 
-app.component('mainmenu',Mainmenu)
 app.component('mainnav',Mainnav)
-app.component('profilewidget',Profilewidget)
 
 
 //pages
@@ -141,25 +132,19 @@ app.component('footerHome',FooterHome)
 // Admin Breadcrumb
 
 
- /*************************** Pharmacy ****************************/
- // Pharmacy Breadcrumb
-app.component('pharmacybreadcrumb',PharmacyBreadCrumb)
-app.component('pharmacybreadcrumb1',PharmacyBreadCrumb1)
-app.component('pharmacybreadcrumb2',PharmacyBreadCrumb2)
+ /*************************** Admin ****************************/
+app.component('adminbreadcrumb',AdminBreadcrumb)
+app.component('adminbreadcrumb1',AdminBreadcrumb1)
+app.component('adminbreadcrumb2',AdminBreadcrumb2)
 
-//Model
-app.component('pharmacymodel',pharmacymodel)
+app.component('adminheader',AdminHeader)
+app.component('adminsidebar',AdminSidebar)
 
-//pharmacy
-app.component('pharmacyheader',PharmacyHeader)
-app.component('pharmacysidebar',PharmacySidebar)
-
-app.component('pharmacydelete', PharmacyDelete)
 app.component('Treeselect', Treeselect)
 app.component('VueMultiselect ', VueMultiselect )
 app.component('TreeView ', TreeView )
 app.component('RootTree ', RootTree )
-app.component('FileUpload ', FileUpload )
+app.component('FileUpload', FileUpload)
 //app.component('VJstree', VJstree)
 app.component('vue3-autocounter', Vue3Autocounter)
 app.component('vue-select', VueSelect)

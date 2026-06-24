@@ -39,16 +39,16 @@
   <!-- /Main Wrapper -->
 </template>
 
-<script>
-export default {
-  data() {
-    return {};
-  },
-  methods: {
-    submitForm() {
-      this.$router.push("/admin/login");
-    },
-  },
-  name: "/admin/forgot-password",
-};
+<script setup>
+import { getCurrentInstance, reactive, toRefs } from "vue";
+defineOptions({
+  name: "/admin/forgot-password"
+});
+const {
+  proxy
+} = getCurrentInstance();
+const state = reactive({});
+function submitForm() {
+  proxy.$router.push("/admin/login");
+}
 </script>

@@ -21,6 +21,10 @@ public partial class Order
     public int? AddressId { get; set; }
 
     public string? TxnRef { get; set; }
+
+    public int? PromotionId { get; set; }
+
+    public decimal? DiscountAmount { get; set; }
    
     public virtual AddressCustomer? Address { get; set; }
 

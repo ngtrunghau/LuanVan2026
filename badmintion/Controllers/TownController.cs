@@ -8,7 +8,7 @@ using badmintion.Authorization;
 namespace badmintion.Controllers
 {
    
-    [Route("api/v1/[controller]")]
+    [Route("api/[controller]")]
     public class TownController : ControllerBase
     {
         private readonly ITownService _service;

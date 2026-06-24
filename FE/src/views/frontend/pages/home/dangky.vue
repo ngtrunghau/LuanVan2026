@@ -133,55 +133,48 @@
     </div>
   </template>
   
-  <script>
-  import { Form, Field } from "vee-validate";
-  import * as Yup from "yup";
-  import { khachHangModel } from "@/models/khachHangModel";
-  import { notifyModel } from "@/models/notifyModel";
-  
-  export default {
-    components: {
-      Form,
-      Field,
-    },
-    data() {
-      return {
-        model: khachHangModel.baseJson(),
-        showPassword: false,
-        showHeaderSpace: false
-      };
-    },
-    setup() {
-      const schema = Yup.object().shape({
-        fullName: Yup.string().required("Tên khách hàng không được bỏ trống !"),
-        phone: Yup.string().required("Số điện thoại không được bỏ trống !"),
-        email: Yup.string().email("Email không hợp lệ").required("Email không được bỏ trống !"),
-        userName: Yup.string().required("Tài khoản không được bỏ trống !"),
-        password: Yup.string().required("Mật khẩu không được bỏ trống !"),
-      });
-      return { schema };
-    },
-    methods: {
-      toggleShow() {
-        this.showPassword = !this.showPassword;
-      },
-      async handleSubmit() {
-        try {
-          const res = await this.$store.dispatch("khachHangStore/create", this.model);
-          
-          this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-          
-          if (res && res.code === 0) {
-            // Đăng ký thành công
-            this.$router.push("/login");
-          }
-        } catch (error) {
-          console.error("Lỗi đăng ký:", error);
-        }
-      }
+  <script setup>
+import { getCurrentInstance, reactive, toRefs } from "vue";
+import { Form, Field } from "vee-validate";
+import * as Yup from "yup";
+import { khachHangModel } from "@/models/khachHangModel";
+import { notifyModel } from "@/models/notifyModel";
+const {
+  proxy
+} = getCurrentInstance();
+const state = reactive({
+  model: khachHangModel.baseJson(),
+  showPassword: false,
+  showHeaderSpace: false
+});
+const {
+  model,
+  showPassword,
+  showHeaderSpace
+} = toRefs(state);
+const schema = Yup.object().shape({
+  fullName: Yup.string().required("Tên khách hàng không được bỏ trống !"),
+  phone: Yup.string().required("Số điện thoại không được bỏ trống !"),
+  email: Yup.string().email("Email không hợp lệ").required("Email không được bỏ trống !"),
+  userName: Yup.string().required("Tài khoản không được bỏ trống !"),
+  password: Yup.string().required("Mật khẩu không được bỏ trống !")
+});
+function toggleShow() {
+  state.showPassword = !state.showPassword;
+}
+async function handleSubmit() {
+  try {
+    const res = await proxy.$store.dispatch("khachHangStore/create", state.model);
+    proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+    if (res && res.code === 0) {
+      // Đăng ký thành công
+      proxy.$router.push("/login");
     }
-  };
-  </script>
+  } catch (error) {
+    console.error("Lỗi đăng ký:", error);
+  }
+}
+</script>
   
   <style scoped>
   /* Thêm style tương tự trang đăng nhập */

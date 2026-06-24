@@ -6,15 +6,12 @@
   </div>
 </template>
 
-<script>
-export default {
-  computed: {
-  },
-  props: {
-    title: {
-      type: String,
-      default: "",
-    }
-  },
-};
+<script setup>
+import { computed } from "vue";
+const props = defineProps({
+  title: {
+    type: String,
+    default: ""
+  }
+});
 </script>

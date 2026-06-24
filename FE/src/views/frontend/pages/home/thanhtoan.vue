@@ -68,15 +68,29 @@
 
               <div class="payment-method mt-4">
                 <h6>Phương thức thanh toán</h6>
-                <div class="bank-transfer">
-                  <i class="fas fa-university"></i> 
-                  <strong class="ms-2">Chuyển khoản ngân hàng</strong>
-                  <!-- <div class="bank-info mt-2">
-                    <p>Ngân hàng: <strong>Vietcombank</strong></p>
-                    <p>Số tài khoản: <strong>123456789</strong></p>
-                    <p>Chủ tài khoản: <strong>Công ty TNHH NTH Shop</strong></p>
-                    <p>Nội dung chuyển khoản: <strong>MH{{ new Date().getTime() }}</strong></p>
-                  </div> -->
+                <div class="mb-2">
+                  <label class="d-flex align-items-center">
+                    <input
+                      type="radio"
+                      class="me-2"
+                      value="bank"
+                      v-model="form.paymentMethod"
+                    />
+                    <i class="fas fa-university"></i>
+                    <strong class="ms-2">Chuyển khoản ngân hàng</strong>
+                  </label>
+                </div>
+                <div>
+                  <label class="d-flex align-items-center">
+                    <input
+                      type="radio"
+                      class="me-2"
+                      value="cod"
+                      v-model="form.paymentMethod"
+                    />
+                    <i class="fas fa-truck"></i>
+                    <strong class="ms-2">Thanh toán khi nhận hàng</strong>
+                  </label>
                 </div>
               </div>
             </b-form>
@@ -115,6 +129,37 @@
             <div class="d-flex justify-content-between">
               <span>Tạm tính:</span>
               <span>{{ formatCurrency(subTotal) }}</span>
+            </div>
+            <div class="input-group my-3">
+              <input
+                v-model.trim="promotionCode"
+                class="form-control"
+                placeholder="Nhập mã khuyến mãi"
+                :disabled="isApplyingPromotion"
+                @keyup.enter="applyPromotion"
+              >
+              <button
+                class="btn btn-outline-primary"
+                type="button"
+                :disabled="isApplyingPromotion || !promotionCode"
+                @click="applyPromotion"
+              >
+                {{ isApplyingPromotion ? 'Đang kiểm tra...' : 'Áp dụng' }}
+              </button>
+            </div>
+            <div
+              v-if="promotionMessage"
+              class="small mb-2"
+              :class="discountAmount > 0 ? 'text-success' : 'text-danger'"
+            >
+              {{ promotionMessage }}
+            </div>
+            <div
+              v-if="discountAmount > 0"
+              class="d-flex justify-content-between text-success"
+            >
+              <span>Khuyến mãi:</span>
+              <span>-{{ formatCurrency(discountAmount) }}</span>
             </div>
             <div class="d-flex justify-content-between">
               <span>Phí vận chuyển:</span>
@@ -217,331 +262,343 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { computed, getCurrentInstance, reactive, toRefs, watch } from "vue";
 import { Form, Field, ErrorMessage } from "vee-validate";
 import * as Yup from "yup";
 import VueMultiselect from 'vue-multiselect';
 import 'vue-multiselect/dist/vue-multiselect.css';
-import {notifyModel} from "@/models/notifyModel";
-
-export default {
-  components: {
-    Form,
-    Field,
-    ErrorMessage,
-    VueMultiselect
+import { notifyModel } from "@/models/notifyModel";
+const {
+  proxy
+} = getCurrentInstance();
+const state = reactive({
+  cartItems: [],
+  form: {
+    email: '',
+    fullName: '',
+    phone: '',
+    province: null,
+    district: null,
+    ward: null,
+    address: '',
+    note: '',
+    paymentMethod: 'bank'
   },
-  data() {
-    return {
-      cartItems: [],
-      form: {
-        email: '',
-        fullName: '',
-        phone: '',
-        province: null,
-        district: null,
-        ward: null,
-        address: '',
-        note: '',
-        paymentMethod: 'bank'
-      },
-      showAddressModal: false,
-      listTinh: [],
-      listTP: [],
-      listPhuong: [],
-      itemsDiaChi: {
-        province: null,
-        district: null,
-        town: null
-      },
-      newAddress: {
+  showAddressModal: false,
+  listTinh: [],
+  listTP: [],
+  listPhuong: [],
+  itemsDiaChi: {
+    province: null,
+    district: null,
+    town: null
+  },
+  newAddress: {
+    address: '',
+    province: null,
+    district: null,
+    town: null,
+    isDefault: true
+  },
+  userAddresses: [],
+  shippingFee: 30000,
+  selectedAddress: null,
+  selectedAddressOption: null,
+  promotionCode: '',
+  promotionMessage: '',
+  discountAmount: 0,
+  isApplyingPromotion: false,
+  // Lưu object đầy đủ (dùng cho VueMultiselect)
+  defaultImage: require('@/assets/img/caulong/logo/logoNTH_removeBackground.png')
+});
+const {
+  cartItems,
+  form,
+  showAddressModal,
+  listTinh,
+  listTP,
+  listPhuong,
+  itemsDiaChi,
+  newAddress,
+  userAddresses,
+  shippingFee,
+  selectedAddress,
+  selectedAddressOption,
+  promotionCode,
+  promotionMessage,
+  discountAmount,
+  isApplyingPromotion,
+  defaultImage
+} = toRefs(state);
+const addressSchema = Yup.object().shape({
+  address: Yup.string().required('Vui lòng nhập địa chỉ'),
+  province: Yup.object().required('Vui lòng chọn tỉnh/thành phố'),
+  district: Yup.object().required('Vui lòng chọn quận/huyện')
+});
+function loadUserData() {
+  const authUser = JSON.parse(localStorage.getItem('auth-user'));
+  if (authUser) {
+    state.form = {
+      ...state.form,
+      email: authUser.email || '',
+      fullName: authUser.fullName || '',
+      phone: authUser.phone || ''
+    };
+  }
+}
+function loadCartItems() {
+  const authUser = JSON.parse(localStorage.getItem('auth-user'));
+  let cartData = [];
+  if (authUser?.cart) {
+    cartData = authUser.cart;
+  } else {
+    cartData = JSON.parse(localStorage.getItem('cart')) || [];
+  }
+  state.cartItems = cartData;
+  console.log("DATA: ", state.cartItems);
+}
+async function loadUserAddresses() {
+  const authUser = JSON.parse(localStorage.getItem('auth-user'));
+  if (authUser?.id) {
+    try {
+      const res = await proxy.$store.dispatch("diaChiStore/getAddressCustomer", {
+        id: authUser.id
+      });
+      if (res?.code === 0) {
+        state.userAddresses = res.data || [];
+      }
+    } catch (error) {
+      console.error('Lỗi khi lấy địa chỉ:', error);
+    }
+  }
+}
+async function getListTinh() {
+  await proxy.$store.dispatch("tinhStore/getAll").then(res => {
+    if (res?.code === 0) {
+      state.listTinh = res.data || [];
+    }
+  });
+}
+async function getListTP(id) {
+  await proxy.$store.dispatch("huyenStore/getAll", {
+    id: id
+  }).then(res => {
+    state.listTP = res.data || [];
+  });
+}
+async function getListPhuong(id) {
+  await proxy.$store.dispatch("phuongStore/getAll", {
+    id: id
+  }).then(res => {
+    state.listPhuong = res.data || [];
+  });
+}
+function onAddressSelect(selectedOption) {
+  // Chỉ lấy ID từ data của option đã chọn
+  state.selectedAddress = selectedOption.data.id;
+
+  // Điền thông tin vào form (nếu cần)
+  // Điền thông tin vào form (nếu cần)
+  if (selectedOption.data) {
+    fillAddressForm(selectedOption.data);
+  }
+}
+function fillAddressForm(address) {
+  state.form.address = address.address;
+  state.itemsDiaChi.province = address.province;
+  state.itemsDiaChi.district = address.district;
+  state.itemsDiaChi.town = address.town;
+}
+async function addNewAddress() {
+  const authUser = JSON.parse(localStorage.getItem('auth-user'));
+  if (!authUser?.id) return;
+  try {
+    const addressData = {
+      customerId: authUser.id,
+      address: state.newAddress.address,
+      provinceId: state.newAddress.province?.id,
+      districtId: state.newAddress.district?.id,
+      townId: state.newAddress.town?.id,
+      isDefault: state.newAddress.isDefault
+    };
+    const res = await proxy.$store.dispatch("diaChiStore/createCustomer", addressData);
+    if (res?.code === 0) {
+      state.showAddressModal = false;
+      loadUserAddresses();
+      proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+
+      // Tự động chọn địa chỉ vừa thêm
+      if (res.data) {
+        fillAddressForm({
+          address: res.data.address,
+          province: state.newAddress.province,
+          district: state.newAddress.district,
+          town: state.newAddress.town
+        });
+      }
+
+      // Reset form
+      state.newAddress = {
         address: '',
         province: null,
         district: null,
         town: null,
         isDefault: true
-      },
-      userAddresses: [],
-      shippingFee: 30000,
-      selectedAddress: null,
-      selectedAddressOption: null, // Lưu object đầy đủ (dùng cho VueMultiselect)
-      defaultImage: require('@/assets/img/caulong/logo/logoNTH_removeBackground.png')
+      };
     }
-  },
-  setup() {
-    const addressSchema = Yup.object().shape({
-      address: Yup.string().required('Vui lòng nhập địa chỉ'),
-      province: Yup.object().required('Vui lòng chọn tỉnh/thành phố'),
-      district: Yup.object().required('Vui lòng chọn quận/huyện')
+  } catch (error) {
+    console.error('Lỗi khi thêm địa chỉ:', error);
+    proxy.$store.dispatch("snackBarStore/addNotify", {
+      message: 'Thêm địa chỉ thất bại',
+      variant: 'danger'
     });
-    
-    return {
-      addressSchema
-    };
-  },
-  computed: {
-    subTotal() {
-      return this.cartItems.reduce((total, item) => total + (item.price * item.quantity), 0)
-    },
-    totalAmount() {
-      return this.subTotal + this.shippingFee
-    },
-    addressOptions() {
-      return [
-        ...this.userAddresses.map(addr => ({
-          value: addr.id,
-          text: `${addr.address}, ${addr.town}, ${addr.district}, ${addr.province}`,
-          data: addr
-        }))
-      ];
-    }
-  },
-  created() {
-    this.loadUserData();
-    this.loadCartItems();
-    this.getListTinh();
-    this.loadUserAddresses();
-  },
-  methods: {
-    loadUserData() {
-      const authUser = JSON.parse(localStorage.getItem('auth-user'));
-      if (authUser) {
-        this.form = {
-          ...this.form,
-          email: authUser.email || '',
-          fullName: authUser.fullName || '',
-          phone: authUser.phone || ''
-        };
-      }
-    },
-    
-    loadCartItems() {
-      const authUser = JSON.parse(localStorage.getItem('auth-user'));
-      let cartData = [];
-      
-      if (authUser?.cart) {
-        cartData = authUser.cart;
-      } else {
-        cartData = JSON.parse(localStorage.getItem('cart')) || [];
-      }
-      
-      this.cartItems = cartData;
-      console.log("DATA: ", this.cartItems);
-      
-    },
-    
-    async loadUserAddresses() {
-      const authUser = JSON.parse(localStorage.getItem('auth-user'));
-      if (authUser?.id) {
-        try {
-          const res = await this.$store.dispatch("diaChiStore/getAddressCustomer", { id: authUser.id });
-          if (res?.code === 0) {
-            this.userAddresses = res.data || [];
-          }
-        } catch (error) {
-          console.error('Lỗi khi lấy địa chỉ:', error);
-        }
-      }
-    },
-    
-    async getListTinh() {
-      await this.$store.dispatch("tinhStore/getAll").then((res) => {
-        if (res?.code === 0) {
-          this.listTinh = res.data || [];
-        }
-      });
-    },
-
-    async getListTP(id) {
-      await this.$store.dispatch("huyenStore/getAll", {id: id}).then((res) => {
-        this.listTP = res.data || [];
-      });
-    },
-
-    async getListPhuong(id) {
-      await this.$store.dispatch("phuongStore/getAll", {id: id}).then((res) => {
-        this.listPhuong = res.data || [];
-      });
-    },
-    
-    onAddressSelect(selectedOption) {
-      // Chỉ lấy ID từ data của option đã chọn
-      this.selectedAddress = selectedOption.data.id; 
-      
-      // Điền thông tin vào form (nếu cần)
-      if (selectedOption.data) {
-        this.fillAddressForm(selectedOption.data);
-      }
-    },
-    
-    fillAddressForm(address) {
-      this.form.address = address.address;
-      this.itemsDiaChi.province = address.province;
-      this.itemsDiaChi.district = address.district;
-      this.itemsDiaChi.town = address.town;
-    },
-    
-    async addNewAddress() {
-      const authUser = JSON.parse(localStorage.getItem('auth-user'));
-      if (!authUser?.id) return;
-
-      try {
-        const addressData = {
-          customerId: authUser.id,
-          address: this.newAddress.address,
-          provinceId: this.newAddress.province?.id,
-          districtId: this.newAddress.district?.id,
-          townId: this.newAddress.town?.id,
-          isDefault: this.newAddress.isDefault
-        };
-
-        const res = await this.$store.dispatch("diaChiStore/createCustomer", addressData);
-        
-        if (res?.code === 0) {
-          this.showAddressModal = false;
-          this.loadUserAddresses();
-          this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-          
-          // Tự động chọn địa chỉ vừa thêm
-          if (res.data) {
-            this.fillAddressForm({
-              address: res.data.address,
-              province: this.newAddress.province,
-              district: this.newAddress.district,
-              town: this.newAddress.town
-            });
-          }
-          
-          // Reset form
-          this.newAddress = {
-            address: '',
-            province: null,
-            district: null,
-            town: null,
-            isDefault: true
-          };
-        }
-      } catch (error) {
-        console.error('Lỗi khi thêm địa chỉ:', error);
-        this.$store.dispatch("snackBarStore/addNotify", {
-          message: 'Thêm địa chỉ thất bại',
-          variant: 'danger'
-        });
-      }
-    },
-    
-    formatCurrency(value) {
-      return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value)
-    },
-
-    async submitOrder() {
-      try {
-        const authUser = JSON.parse(localStorage.getItem('auth-user'));
-        
-        // Kiểm tra xem đã chọn địa chỉ chưa
-        if (!this.selectedAddress) {
-          this.$store.dispatch("snackBarStore/addNotify", {
-            message: 'Vui lòng chọn địa chỉ giao hàng',
-            variant: 'danger'
-          });
-          return;
-        }
-
-        const orderData = {
-          customerId: authUser.id,
-          totalAmount: this.totalAmount,
-          addressId: this.selectedAddress, // Chỉ gửi id của địa chỉ
-          listOrderItems: this.cartItems.map(item => ({
-            productsId: item.id,
-            name: item.name,
-            price: item.price,
-            quantity: item.quantity,
-            imageUrl: item.imageUrl
-          })),
-          paymentMethod: this.form.paymentMethod
-        };
-
-        // Gọi API tạo đơn hàng
-        const res = await this.$store.dispatch("odersStore/createCustomer", orderData);
-        
-        if (res?.code === 0) {
-          // Kiểm tra nếu có URL thanh toán (VNPay)
-          if (res.data?.url) {
-            // Điều hướng sang URL thanh toán
-            window.location.href = res.data.url; 
-            // Hoặc mở tab mới (nếu cần):
-            // window.open(res.data.url, '_blank');
-          } else {
-            // Nếu không có URL (thanh toán thường), chuyển đến trang cảm ơn
-            this.$router.push({
-              path: '/cam-on',
-              query: { orderId: res.data?.orderNumber || '' }
-            });
-          }
-
-          // Xóa giỏ hàng
-          if (authUser) {
-            authUser.cart = [];
-            localStorage.setItem('auth-user', JSON.stringify(authUser));
-          } else {
-            localStorage.removeItem('cart');
-          }
-          
-          window.dispatchEvent(new CustomEvent('cart-updated'));
-          
-        }
-      } catch (error) {
-        console.error('Lỗi khi đặt hàng:', error);
-        this.$store.dispatch("snackBarStore/addNotify", {
-          message: error.message || 'Đặt hàng thất bại',
-          variant: 'danger'
-        });
-      }
-    },
-    
-    
-  },
-  watch: {
-    'itemsDiaChi.province': {
-      handler(val) {
-        if (val) {
-          this.getListTP(val.id);
-          this.itemsDiaChi.district = null;
-          this.itemsDiaChi.town = null;
-        }
-      },
-      deep: true
-    },
-    'itemsDiaChi.district': {
-      handler(val) {
-        if (val) {
-          this.getListPhuong(val.id);
-          this.itemsDiaChi.town = null;
-        }
-      },
-      deep: true
-    },
-    'newAddress.province': {
-      handler(val) {
-        if (val) {
-          this.getListTP(val.id);
-          this.newAddress.district = null;
-          this.newAddress.town = null;
-        }
-      },
-      deep: true
-    },
-    'newAddress.district': {
-      handler(val) {
-        if (val) {
-          this.getListPhuong(val.id);
-          this.newAddress.town = null;
-        }
-      },
-      deep: true
-    }
   }
 }
+function formatCurrency(value) {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND'
+  }).format(value);
+}
+async function applyPromotion() {
+  if (!state.promotionCode) return;
+
+  state.isApplyingPromotion = true;
+  state.promotionMessage = '';
+  state.discountAmount = 0;
+  try {
+    const res = await proxy.$store.dispatch("promotionStore/validateCustomer", {
+      code: state.promotionCode,
+      orderValue: subTotal.value
+    });
+    if (res?.code === 0) {
+      state.promotionCode = res.data?.code || state.promotionCode.toUpperCase();
+      state.discountAmount = Number(res.data?.discountAmount || 0);
+      state.promotionMessage = res.message || 'Áp dụng mã khuyến mãi thành công.';
+      return;
+    }
+
+    state.promotionMessage = res?.message || 'Mã khuyến mãi không hợp lệ.';
+  } catch (error) {
+    state.promotionMessage = error?.message || 'Không thể kiểm tra mã khuyến mãi.';
+  } finally {
+    state.isApplyingPromotion = false;
+  }
+}
+async function submitOrder() {
+  try {
+    const authUser = JSON.parse(localStorage.getItem('auth-user'));
+
+    // Kiểm tra xem đã chọn địa chỉ chưa
+    if (!state.selectedAddress) {
+      proxy.$store.dispatch("snackBarStore/addNotify", {
+        message: 'Vui lòng chọn địa chỉ giao hàng',
+        variant: 'danger'
+      });
+      return;
+    }
+    const orderData = {
+      customerId: authUser.id,
+      totalAmount: totalAmount.value,
+      addressId: state.selectedAddress,
+      // Chỉ gửi id của địa chỉ
+      listOrderItems: state.cartItems.map(item => ({
+        productsId: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        imageUrl: item.imageUrl
+      })),
+      paymentMethod: state.form.paymentMethod,
+      promotionCode: state.discountAmount > 0 ? state.promotionCode : null
+    };
+
+    // Gọi API tạo đơn hàng
+    const res = await proxy.$store.dispatch("odersStore/createCustomer", orderData);
+    if (res?.code === 0) {
+      proxy.$router.push({
+        path: '/thanh-toan-thanh-cong',
+        query: {
+          orderId: res.data?.orderId || '',
+          paymentMethod: state.form.paymentMethod
+        }
+      });
+
+      // Xóa giỏ hàng
+      if (authUser) {
+        authUser.cart = [];
+        localStorage.setItem('auth-user', JSON.stringify(authUser));
+      } else {
+        localStorage.removeItem('cart');
+      }
+      window.dispatchEvent(new CustomEvent('cart-updated'));
+    }
+  } catch (error) {
+    console.error('Lỗi khi đặt hàng:', error);
+    proxy.$store.dispatch("snackBarStore/addNotify", {
+      message: error.message || 'Đặt hàng thất bại',
+      variant: 'danger'
+    });
+  }
+}
+const subTotal = computed(() => {
+  return state.cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
+});
+const totalAmount = computed(() => {
+  return Math.max(0, subTotal.value - state.discountAmount) + state.shippingFee;
+});
+const addressOptions = computed(() => {
+  return [...state.userAddresses.map(addr => ({
+    value: addr.id,
+    text: `${addr.address}, ${addr.town}, ${addr.district}, ${addr.province}`,
+    data: addr
+  }))];
+});
+watch(() => state.itemsDiaChi.province, val => {
+  if (val) {
+    getListTP(val.id);
+    state.itemsDiaChi.district = null;
+    state.itemsDiaChi.town = null;
+  }
+}, {
+  deep: true
+});
+watch(() => state.itemsDiaChi.district, val => {
+  if (val) {
+    getListPhuong(val.id);
+    state.itemsDiaChi.town = null;
+  }
+}, {
+  deep: true
+});
+watch(() => state.newAddress.province, val => {
+  if (val) {
+    getListTP(val.id);
+    state.newAddress.district = null;
+    state.newAddress.town = null;
+  }
+}, {
+  deep: true
+});
+watch(() => state.newAddress.district, val => {
+  if (val) {
+    getListPhuong(val.id);
+    state.newAddress.town = null;
+  }
+}, {
+  deep: true
+});
+watch(subTotal, () => {
+  state.discountAmount = 0;
+  state.promotionMessage = state.promotionCode
+    ? 'Giỏ hàng đã thay đổi, vui lòng áp dụng lại mã khuyến mãi.'
+    : '';
+});
+loadUserData();
+loadCartItems();
+getListTinh();
+loadUserAddresses();
 </script>
 
 <style scoped>

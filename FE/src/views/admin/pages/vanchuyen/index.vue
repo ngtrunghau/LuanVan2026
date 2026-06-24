@@ -1,11 +1,11 @@
 <template>
   <div class="main-Wrapper">
-    <pharmacyheader></pharmacyheader>
-    <pharmacysidebar></pharmacysidebar>
+    <adminheader></adminheader>
+    <adminsidebar></adminsidebar>
     <!-- Page Wrapper -->
     <div class="page-wrapper">
       <div class="content container-fluid">
-        <pharmacybreadcrumb2 :title="title" />
+        <adminbreadcrumb2 :title="title" />
         <div class="row">
           <div class="col-12">
             <div class="card">
@@ -203,7 +203,7 @@
                                   </tfoot>
                                 </table>
                               </div>
-                            
+
                               <div class="text-end pt-2 mt-3">
                                 <b-button
                                     type="button"
@@ -296,212 +296,206 @@
       </div>
     </div>
   </div>
-  <pharmacymodel />
-  <pharmacydelete />
 </template>
-<script >
-
+<script setup>
+import { getCurrentInstance, onMounted, reactive, toRefs, watch } from "vue";
 import VueDatePicker from '@vuepic/vue-datepicker';
 import { odersModel } from "@/models/odersModel";
 import Treeselect from 'vue3-treeselect';
-import VueMultiselect from 'vue-multiselect'
+import VueMultiselect from 'vue-multiselect';
 import 'vue-multiselect/dist/vue-multiselect.css';
 import { Form, Field } from "vee-validate";
 import * as Yup from "yup";
 import { Modal } from 'bootstrap';
-import {notifyModel} from "@/models/notifyModel";
-
-export default {
-  components: {
-    VueDatePicker,
-    Treeselect,
-    VueMultiselect,
-    Form,
-    Field,
-  },
-  data() {
-    return {
-      title: "DANH SÁCH ĐƠN HÀNG",
-      model: odersModel.baseJson(),
-      list: [],
-      listSP: [],
-      currentPage: 1,
-      numberOfElement: 1,
-      perPage: 5,
-      pageOptions: [ 5, 10, 25, 50, 100],
-      totalRows: 1,
-      sortBy: 'age',
-      sortDesc: false,
-      theModal: null,
-      isView: false,
-      itemFilter: {
-        userName : null,
-        unitRole : null
-      },
-    };
-  },
-  name: "pharmacy/user",
-
-  created() {
-    this.getListSanPham();
-    this.getData();
-  },
-  mounted() {
-    this.theModal = new Modal(document.getElementById('info_modal'));
-
-    this.$refs.ref_info_modal.addEventListener('hidden.bs.modal', event => {
-      this.model = odersModel.baseJson();
-
-    });
-    this.$refs.ref_delete.addEventListener('hidden.bs.modal', event => {
-      this.model = odersModel.baseJson();
-
-    });
-  },
-  setup() {
-    const schema = Yup.object().shape({
-      // userName: Yup.string().required("Tài khoản không được bỏ trống !"),
-      // name : Yup.string().required("Họ và tên không được bỏ trống !"),
-      // password : Yup.string().required("Mật khẩu không được bỏ trống !"),
-      // unitRole : Yup.mixed().required("Vai trò không được bỏ trống !"),
-    });
-
-    return {
-      schema
-    };
-  },
-  watch: {
-    perPage: {
-      deep: true,
-      handler(val){
-        this.getData();
-      }
-    },
-    currentPage: {
-      deep: true,
-      handler(val){
-        this.getData();
-      }
-    }
-  },
-
-  methods: {
-    formatDate(isoString) {
-      if (!isoString) return "N/A"; // Xử lý giá trị rỗng
-      try {
-        const date = new Date(isoString);
-        if (isNaN(date.getTime())) return "N/A"; // Kiểm tra Date hợp lệ
-        return new Intl.DateTimeFormat('vi-VN', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false
-        }).format(date);
-      } catch (e) {
-        return "N/A"; // Phòng lỗi bất ngờ
-      }
-    },
-    formatCurrency(value) {
-      return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
-    },
-    calculateSubTotal(items) {
-      if (!items) return 0;
-      return items.reduce((total, item) => total + (item.price * item.quantity), 0);
-    },
-    handleClear() {
-      this.itemFilter = {
-        userName : null,
-        unitRole : null
-      }
-    },
-    handleSearch() {
-      this.getData();
-    },
-    async getData() {
-      let params = {
-        start: this.currentPage,
-        limit: this.perPage,
-        sortBy: this.sortBy,
-        userName: this.itemFilter.userName,
-        unitRole : this.itemFilter.unitRole,
-      }
-      await this.$store.dispatch("shippingStore/getPagingParams", params ).then(res => {
-            if (res != null && res.code ===0) {
-              this.list = res.data.data
-              this.totalRows = res.data.totalRows
-              this.numberOfElement = res.data.data.length
-              this.list = this.list.map(user => {
-                return {
-                  ...user,
-                  unitRole: this.listSP.find(role => role.id === user.unitRoleId) || null
-                };
-              });
-              console.log("LIST USER: ", this.list);
-              
-            }
-      });
-    },
-
-    async getListSanPham(){
-      await  this.$store.dispatch("sanPhamStore/getAll").then((res) =>{
-            if (res != null && res.code ===0) {
-              this.listSP = res.data || [];
-            }
-      })
-    },
-    async handleGetInfo(id) {
-      await this.$store.dispatch("shippingStore/getById", {id : id}).then((res) => {
-        if (res != null && res.code ===0) {
-          this.model = res.data
-          console.log("MODEL: ", this.model)
-        }
-      });
-    },
-    handleShowDeleteModal(id) {
-      this.model.id = id;
-      this.showDeleteModal = true;
-    },
-    async handleDelete() {
-      if (this.model.id != 0 && this.model.id != null && this.model.id) {
-        await this.$store.dispatch("shippingStore/delete", { 'id': this.model.id }).then((res) => {
-          if (res != null && res.code ===0) {
-            this.showDeleteModal = false;
-            this.getData();
-          }
-          this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-        });
-      }
-    },
-    async handleReset() {
-      if (this.model.id != 0 && this.model.id != null && this.model.id) {
-        await this.$store.dispatch("shippingStore/reset", { 'id': this.model.id }).then((res) => {
-          if (res != null && res.code ===0) {
-            this.showResetModal = false;
-            this.getData();
-          }
-          this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-        });
-      }
-    },
-    async handleSubmit() {
-        let params = {
-          id: this.model.shippingDetail[0].id,
-          ordersId: this.model.id,
-          status: 2
-        }
-        await this.$store.dispatch("shippingStore/update", params).then((res) => {
-          if (res != null && res.code ===0) {
-            this.getData();
-            this.theModal.hide();
-          }
-          this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-        });
-
-      }
-
+import { notifyModel } from "@/models/notifyModel";
+defineOptions({
+  name: "admin/page"
+});
+const {
+  proxy
+} = getCurrentInstance();
+const state = reactive({
+  title: "DANH SÁCH ĐƠN HÀNG",
+  model: odersModel.baseJson(),
+  list: [],
+  listSP: [],
+  currentPage: 1,
+  numberOfElement: 1,
+  perPage: 5,
+  pageOptions: [5, 10, 25, 50, 100],
+  totalRows: 1,
+  sortBy: 'age',
+  sortDesc: false,
+  theModal: null,
+  isView: false,
+  itemFilter: {
+    userName: null,
+    unitRole: null
   }
-};
+});
+const {
+  title,
+  model,
+  list,
+  listSP,
+  currentPage,
+  numberOfElement,
+  perPage,
+  pageOptions,
+  totalRows,
+  sortBy,
+  sortDesc,
+  theModal,
+  isView,
+  itemFilter
+} = toRefs(state);
+const schema = Yup.object().shape({
+  // userName: Yup.string().required("Tài khoản không được bỏ trống !"),
+  // name : Yup.string().required("Họ và tên không được bỏ trống !"),
+  // password : Yup.string().required("Mật khẩu không được bỏ trống !"),
+  // unitRole : Yup.mixed().required("Vai trò không được bỏ trống !"),
+});
+function formatDate(isoString) {
+  if (!isoString) return "N/A"; // Xử lý giá trị rỗng
+  // Xử lý giá trị rỗng
+  try {
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return "N/A"; // Kiểm tra Date hợp lệ
+    return new Intl.DateTimeFormat('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    }).format(date);
+  } catch (e) {
+    return "N/A"; // Phòng lỗi bất ngờ
+  }
+}
+function formatCurrency(value) {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND'
+  }).format(value);
+}
+function calculateSubTotal(items) {
+  if (!items) return 0;
+  return items.reduce((total, item) => total + item.price * item.quantity, 0);
+}
+function handleClear() {
+  state.itemFilter = {
+    userName: null,
+    unitRole: null
+  };
+}
+function handleSearch() {
+  getData();
+}
+async function getData() {
+  let params = {
+    start: state.currentPage,
+    limit: state.perPage,
+    sortBy: state.sortBy,
+    userName: state.itemFilter.userName,
+    unitRole: state.itemFilter.unitRole
+  };
+  await proxy.$store.dispatch("shippingStore/getPagingParams", params).then(res => {
+    if (res != null && res.code === 0) {
+      state.list = res.data.data;
+      state.totalRows = res.data.totalRows;
+      state.numberOfElement = res.data.data.length;
+      state.list = state.list.map(user => {
+        return {
+          ...user,
+          unitRole: state.listSP.find(role => role.id === user.unitRoleId) || null
+        };
+      });
+      console.log("LIST USER: ", state.list);
+    }
+  });
+}
+async function getListSanPham() {
+  await proxy.$store.dispatch("sanPhamStore/getAll").then(res => {
+    if (res != null && res.code === 0) {
+      state.listSP = res.data || [];
+    }
+  });
+}
+async function handleGetInfo(id) {
+  await proxy.$store.dispatch("shippingStore/getById", {
+    id: id
+  }).then(res => {
+    if (res != null && res.code === 0) {
+      state.model = res.data;
+      console.log("MODEL: ", state.model);
+    }
+  });
+}
+function handleShowDeleteModal(id) {
+  state.model.id = id;
+  proxy.showDeleteModal = true;
+}
+async function handleDelete() {
+  if (state.model.id != 0 && state.model.id != null && state.model.id) {
+    await proxy.$store.dispatch("shippingStore/delete", {
+      'id': state.model.id
+    }).then(res => {
+      if (res != null && res.code === 0) {
+        proxy.showDeleteModal = false;
+        getData();
+      }
+      proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+    });
+  }
+}
+async function handleReset() {
+  if (state.model.id != 0 && state.model.id != null && state.model.id) {
+    await proxy.$store.dispatch("shippingStore/reset", {
+      'id': state.model.id
+    }).then(res => {
+      if (res != null && res.code === 0) {
+        proxy.showResetModal = false;
+        getData();
+      }
+      proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+    });
+  }
+}
+async function handleSubmit() {
+  let params = {
+    id: state.model.shippingDetail[0].id,
+    ordersId: state.model.id,
+    status: 2
+  };
+  await proxy.$store.dispatch("shippingStore/update", params).then(res => {
+    if (res != null && res.code === 0) {
+      getData();
+      state.theModal.hide();
+    }
+    proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+  });
+}
+watch(() => state.perPage, val => {
+  getData();
+}, {
+  deep: true
+});
+watch(() => state.currentPage, val => {
+  getData();
+}, {
+  deep: true
+});
+onMounted(() => {
+  state.theModal = new Modal(document.getElementById('info_modal'));
+  proxy.$refs.ref_info_modal.addEventListener('hidden.bs.modal', event => {
+    state.model = odersModel.baseJson();
+  });
+  proxy.$refs.ref_delete.addEventListener('hidden.bs.modal', event => {
+    state.model = odersModel.baseJson();
+  });
+});
+getListSanPham();
+getData();
 </script>
 

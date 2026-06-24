@@ -27,53 +27,42 @@
     </div>
 </div>
 </template>
-<script>
+<script setup>
+import { getCurrentInstance, onMounted, reactive, toRefs, watch } from "vue";
 import AOS from "aos";
 import "aos/dist/aos.css";
-
-
-
-
-export default {
-  components: {
-
-  },
-  data() {
-    return {
-
-      list: [],
-      url : `${process.env.VUE_APP_API_URL}files/view/`,
-      urlFile:`${process.env.VUE_APP_API_URL}files/view`,
-      
-    };
-  },
-
-  props: {
-    detail: { type : Object}
-  },
-  watch:{
-    '$props':{
-      handler: function (val) {
-        this.list = val.detail;
-        
-      },
-      deep: true
-    }
-  },
-  mounted() {
-    this.$nextTick(() => {
-      AOS.init();
-    });
-  },
-  created() {
-  },
-  methods: {
-    nextSlide() {
-      this.$refs.carousel.next();
-    },
-    prevSlide() {
-      this.$refs.carousel.prev();
-    },
-  },
-};
+const props = defineProps({
+  detail: {
+    type: Object
+  }
+});
+const {
+  proxy
+} = getCurrentInstance();
+const state = reactive({
+  list: [],
+  url: `${process.env.VUE_APP_API_URL}files/view/`,
+  urlFile: `${process.env.VUE_APP_API_URL}files/view`
+});
+const {
+  list,
+  url,
+  urlFile
+} = toRefs(state);
+function nextSlide() {
+  proxy.$refs.carousel.next();
+}
+function prevSlide() {
+  proxy.$refs.carousel.prev();
+}
+watch(() => proxy.$props, val => {
+  state.list = val.detail;
+}, {
+  deep: true
+});
+onMounted(() => {
+  proxy.$nextTick(() => {
+    AOS.init();
+  });
+});
 </script>

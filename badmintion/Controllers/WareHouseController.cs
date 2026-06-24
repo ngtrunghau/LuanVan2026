@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace badmintion.Controllers
 {
     [Authorize]
-    [Route("api/v1/[controller]")]
+    [Route("api/[controller]")]
     public class WareHouseController : DefaultReposityController<WareHouse>
     {
         private readonly IWareHouseService _service;

@@ -13,6 +13,10 @@
         public int? CustomerId { get; set; }
         public int? AddressId { get; set; }
 
+        public string? PaymentMethod { get; set; }
+
+        public string? PromotionCode { get; set; }
+
         public bool? IsDeleted { get; set; }
 
         public List<OrderItemDTO> ListOrderItems { get; set; }

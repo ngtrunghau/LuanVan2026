@@ -1,5 +1,6 @@
 ﻿using badmintion.DTO;
 using badmintion.Interface;
+using badmintion.Interface.Core;
 using badmintion.Lib.Core.DefaultRepository;
 using badmintion.Models;
 using badmintion.Validation;
@@ -13,10 +14,15 @@ namespace badmintion.Services
     public class AddressCustomerService : IAddressCustomerService
     {
         private readonly BadmintionNlContext _context;
+        private readonly ICurrentUserService _currentUser;
 
-        public AddressCustomerService(BadmintionNlContext context, IHttpContextAccessor contextAccessor)
+        public AddressCustomerService(
+            BadmintionNlContext context,
+            IHttpContextAccessor contextAccessor,
+            ICurrentUserService currentUser)
         {
             _context = context;
+            _currentUser = currentUser;
         }
 
         public async Task<dynamic> Create(AddressCustomerDTO model)
@@ -36,7 +42,9 @@ namespace badmintion.Services
                     DistrictId = model.DistrictId,
                     TownId = model.TownId,
                     Address = model.Address,
-                    CustomerId = model.CustomerId,  
+                    CustomerId = _currentUser.IsCustomer
+                        ? _currentUser.UserId
+                        : model.CustomerId,
                     IsDeleted = model.IsDeleted == null ? false : model.IsDeleted,
                 };
 
@@ -63,7 +71,13 @@ namespace badmintion.Services
             {
                 if (id == default)
                     throw new ResponseMessageException().WithException(DefaultCode.ERROR_STRUCTURE);
-                var data = await _context.AddressCustomers.Where(x => x.IsDeleted == false && x.CustomerId == id).ToListAsync();
+                var customerId = _currentUser.IsCustomer ? _currentUser.UserId : id;
+                if (!customerId.HasValue)
+                    throw new ResponseMessageException().WithException(DefaultCode.NOT_HAVE_ACCESS);
+
+                var data = await _context.AddressCustomers
+                    .Where(x => x.IsDeleted == false && x.CustomerId == customerId.Value)
+                    .ToListAsync();
                 if (data == null)
                 {
                     return null;
@@ -117,6 +131,8 @@ namespace badmintion.Services
                 var existingCustomer = await _context.AddressCustomers.FindAsync(model.Id);
                 if (existingCustomer == null)
                     throw new ResponseMessageException().WithException(DefaultCode.DATA_NOT_FOUND);  // Nếu không tìm thấy đối tượng cần cập nhật
+                if (_currentUser.IsCustomer && existingCustomer.CustomerId != _currentUser.UserId)
+                    throw new ResponseMessageException().WithException(DefaultCode.NOT_HAVE_ACCESS);
 
                 existingCustomer.ProvinceId = model.ProvinceId;
                 existingCustomer.DistrictId = model.DistrictId;

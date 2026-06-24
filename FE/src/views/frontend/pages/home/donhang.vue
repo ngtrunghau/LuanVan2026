@@ -87,9 +87,10 @@
                       <span v-else-if="item.status == 2" class="badge bg-warning ms-2">
                         Đang vận chuyển
                       </span>
-                      <span v-else class="badge bg-success ms-2">
+                      <span v-else-if="item.status == 3" class="badge bg-success ms-2">
                         Giao hàng thành công
                       </span>
+                      <span v-else class="badge bg-danger ms-2">Đã hủy</span>
                     </li>
                   </ul>
                 </div>
@@ -134,6 +135,9 @@
                     </tfoot>
                   </table>
                 </div>
+
+                <h5 class="mt-4 mb-3">Lịch sử đơn hàng</h5>
+                <OrderLogTimeline :logs="item.shippingDetails || []" />
               </div>
             </div>
           </div>
@@ -152,7 +156,7 @@
           </div> -->
           
           <div>
-            <div class="card shadow mb-3" v-for="(item, index) in this.list" :key="index">
+            <div class="card shadow mb-3" v-for="(item, index) in list" :key="index">
               <div class="card-body" v-for="(review, index) in item.items" :key="index">
                 <div class="row">
                   <div class="col-md-2">
@@ -169,7 +173,7 @@
                     </div>
                     <p class="text-muted">Đã mua ngày: {{ formatDate(item.orderDate) }}</p>
                     
-                    <div class="mb-3">
+                    <div v-if="!review.submitted" class="mb-3">
                       <label class="form-label">Đánh giá của bạn:</label>
                       <div class="rating">
                         <i 
@@ -182,7 +186,7 @@
                       </div>
                     </div>
                     
-                    <div class="mb-3">
+                    <div v-if="!review.submitted" class="mb-3">
                       <label class="form-label">Nhận xét:</label>
                       <textarea 
                         class="form-control" 
@@ -192,7 +196,7 @@
                       ></textarea>
                     </div>
                     
-                    <div class="d-flex justify-content-end">
+                    <div v-if="!review.submitted" class="d-flex justify-content-end">
                       <button 
                         class="btn btn-primary"
                         @click="submitReview(review)"
@@ -206,6 +210,9 @@
                           Gửi đánh giá
                         </span>
                       </button>
+                    </div>
+                    <div v-else class="alert alert-success mb-0">
+                      Cảm ơn bạn đã đánh giá sản phẩm. Nội dung đang chờ quản trị viên duyệt.
                     </div>
                   </div>
                 </div>
@@ -257,11 +264,25 @@
                       <span v-else-if="model.status == 2" class="badge bg-warning ms-2">
                         Đang vận chuyển
                       </span>
-                      <span v-else class="badge bg-success ms-2">
+                      <span v-else-if="model.status == 3" class="badge bg-success ms-2">
                         Giao hàng thành công
                       </span>
+                      <span v-else class="badge bg-danger ms-2">Đã hủy</span>
                     </div>
                   </div>
+                </div>
+                <div class="mt-3">
+                  <h5 class="mb-3">Lịch sử đơn hàng</h5>
+                  <OrderLogTimeline :logs="orderLogs" />
+                </div>
+                <div v-if="model.status == 1" class="mt-3">
+                  <label class="form-label">Lý do hủy đơn</label>
+                  <textarea
+                    v-model.trim="cancellationReason"
+                    class="form-control"
+                    rows="2"
+                    placeholder="Nhập lý do bạn muốn hủy đơn"
+                  />
                 </div>
                 <div class="text-end pt-2 mt-3">
                   <b-button
@@ -277,6 +298,16 @@
                   >
                     Đã nhận hàng
                   </b-button>
+                  <b-button
+                    v-if="model.status == 1"
+                    type="button"
+                    variant="danger"
+                    class="ms-1"
+                    :disabled="!cancellationReason"
+                    @click="handleCancelOrder"
+                  >
+                    Hủy đơn
+                  </b-button>
                 </div>
               </Form>
             </div>
@@ -287,249 +318,278 @@
     <footerHome></footerHome>
   </template>
   
-  <script>
-  import { Form, Field } from "vee-validate";
-  import {notifyModel} from "@/models/notifyModel";
-  import { Modal } from 'bootstrap';
-    export default {
-      components: {
-        Form,
-        Field,
-      },
-      name: 'OrderTracking',
-      data() {
-        return {
-          activeTab: 'orders',
-          showReviewsTab: false,
-          showDetails: false,
-          list: [],
-          currentPage: 1,
-          numberOfElement: 1,
-          perPage: 10,
-          pageOptions: [5, 10, 25, 50, 100],
-          totalRows: 1,
-          model: [],
-          theModal: null,
-          expandedOrders: {}, // Lưu trạng thái expand/collapse của từng đơn hàng (key: orderId, value: boolean)
+  <script setup>
+import { computed, getCurrentInstance, onMounted, reactive, toRefs, watch } from "vue";
+import { Form, Field } from "vee-validate";
+import { notifyModel } from "@/models/notifyModel";
+import { Modal } from 'bootstrap';
+import OrderLogTimeline from "@/components/orders/OrderLogTimeline.vue";
+defineOptions({
+  name: 'OrderTracking'
+});
+const {
+  proxy
+} = getCurrentInstance();
+const state = reactive({
+  activeTab: 'orders',
+  showReviewsTab: true,
+  showDetails: false,
+  list: [],
+  currentPage: 1,
+  numberOfElement: 1,
+  perPage: 10,
+  pageOptions: [5, 10, 25, 50, 100],
+  totalRows: 1,
+  model: [],
+  orderLogs: [],
+  cancellationReason: "",
+  theModal: null,
+  expandedOrders: {},
+  // Lưu trạng thái expand/collapse của từng đơn hàng (key: orderId, value: boolean)
 
-          // Data for reviews
-          reviews: [],
-          reviewsLoading: false,
-        }
-      },
-      computed: {
-        filteredOrders() {
-          // Có thể thêm filter nếu cần
-          return this.list;
-        },
-        // Lấy danh sách sản phẩm có thể đánh giá
-        // reviewableProducts() {
-        //   return this.list.flatMap(order => 
-        //     order.orderItems
-        //       .filter(item => item.canReview) // Giả sử BE trả về flag này
-        //       .map(item => ({
-        //         orderId: order.id,
-        //         productId: item.products.id,
-        //         productName: item.products.name,
-        //         productImage: item.products.image,
-        //         orderDate: order.orderDate,
-        //         rating: 0,
-        //         comment: '',
-        //         submitting: false
-        //       }))
-        //   );
-        // }
-      },
-      watch: {
-        activeTab(newVal) {
-          if (newVal === 'reviews') {
-            this.loadReviews();
-          }
-        },
-        perPage: {
-          deep: true,
-          handler(val){
-            this.getData();
-          }
-        },
-        currentPage: {
-          deep: true,
-          handler(val){
-            this.getData();
-          }
-        }
-      },
-      mounted() {
-        this.theModal = new Modal(document.getElementById('info_modal'));
-      },
-      created() {
-        this.getData();
-      },
-      methods: {
-        async getData() {
-          const authUser = JSON.parse(localStorage.getItem('auth-user'));
-          let params = {
-            id: authUser.id
-          }
-          await this.$store.dispatch("shippingStore/getByIdCustomer", params).then(res => {
-            if (res != null && res.code === 0) {
-              this.list = res.data;
-              console.log("LIST: ", this.list);
-            }
-          });
-        },
-        async handleGetInfo(id) {
-          await this.$store.dispatch("shippingStore/getByIdOrder", {id : id}).then((res) => {
-            if (res != null && res.code ===0) {
-              this.model = res.data[0]
-              console.log("MODEL: ", this.model);
-              
-            }
-          });
-        },
-        async handleSubmit() {
-          let params = {
-            id: this.model.id,
-            ordersId: this.model.ordersId,
-            status: 3
-          }
-          await this.$store.dispatch("shippingStore/updateCustomer", params).then((res) => {
-            if (res != null && res.code ===0) {
-              this.getData();
-              this.theModal.hide();
-            }
-            this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-          });
-        },
-        toggleDetails(index) {
-          this.orders[index].showDetails = !this.orders[index].showDetails;
-        },
-        formatCurrency(value) {
-          return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
-        },
-        calculateSubTotal(orderItems) {
-          if (!orderItems) return 0;
-          return orderItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-        },
-        toggleOrderDetails(orderId) {
-          // Đảo trạng thái (nếu không có key thì mặc định là true)
-          this.expandedOrders = {
-            ...this.expandedOrders,
-            [orderId]: !this.expandedOrders[orderId]
-          };
-        },
-        isOrderExpanded(orderId) {
-          // Kiểm tra trạng thái (mặc định false nếu không có key)
-          return !!this.expandedOrders[orderId];
-        },
-        formatDate(isoString) {
-          if (!isoString) return "N/A"; // Xử lý giá trị rỗng
-          try {
-            const date = new Date(isoString);
-            if (isNaN(date.getTime())) return "N/A"; // Kiểm tra Date hợp lệ
-            return new Intl.DateTimeFormat('vi-VN', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: false
-            }).format(date);
-          } catch (e) {
-            return "N/A"; // Phòng lỗi bất ngờ
-          }
-        },
-        async loadReviews() {
-          this.reviewsLoading = true;
-          const authUser = JSON.parse(localStorage.getItem('auth-user'));
-          let params = {
-            start: this.currentPage,
-            limit: this.perPage,
-            idDonViCha: authUser.id
-          }
-          await this.$store.dispatch("odersStore/getPagingParamsStatus3Customer", params ).then(response => {
-                if (response != null && response.code === 0) {
-                  this.list = response.data.data
-                  this.totalRows = response.data.totalRows
-                  this.numberOfElement = response.data.data.length
-
-                  // this.reviews = this.list.map(item => ({
-                  //   ...item,
-                  //   rating: item.rating || 0,
-                  //   comment: item.comment || '',
-                  //   submitting: false
-                  // }));
-                  console.log("LIST ĐÁNH GIÁ: ", this.list);
-                }
-                this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(response));
-                this.reviewsLoading = false;
-          });
-          // try {
-          //   this.reviewsLoading = true;
-          //   const authUser = JSON.parse(localStorage.getItem('auth-user'));
-          //   let params = {
-          //     start: this.currentPage,
-          //     limit: this.perPage,
-          //     idDonViCha: authUser.id
-          //   }
-          //   const response = await this.$store.dispatch("odersStore/getPagingParamsStatus3Customer", params);
-            
-          //   if (response?.code === 0) {
-          //     this.reviews = response.data.map(item => ({
-          //       ...item,
-          //       rating: item.rating || 0,
-          //       comment: item.comment || '',
-          //       submitting: false
-          //     }));
-          //   }
-          // } catch (error) {
-          //   console.error("Error loading reviews:", error);
-          //   this.$store.dispatch("snackBarStore/addNotify", 
-          //     notifyModel.addMessage({ code: -1, message: "Lỗi khi tải danh sách đánh giá" })
-          //   );
-          // } finally {
-          //   this.reviewsLoading = false;
-          // }
-        },
-        
-        updateRating(review, rating) {
-          review.rating = rating;
-        },
-        
-        async submitReview(review) {
-          try {
-            review.submitting = true;
-            const authUser = JSON.parse(localStorage.getItem('auth-user'));
-            
-            const payload = {
-              userId: authUser.id,
-              productId: review.productId,
-              orderId: review.orderId,
-              rating: review.rating,
-              comment: review.comment
-            };
-            
-            const response = await this.$store.dispatch("danhGiaStore/create", payload);
-            
-            if (response?.code === 0) {
-              this.$store.dispatch("snackBarStore/addNotify", 
-                notifyModel.addMessage({ code: 0, message: "Đánh giá đã được gửi thành công!" })
-              );
-              // Xóa khỏi danh sách sau khi gửi thành công
-              this.reviews = this.reviews.filter(r => r.productId !== review.productId);
-            }
-          } catch (error) {
-            console.error("Error submitting review:", error);
-            this.$store.dispatch("snackBarStore/addNotify", 
-              notifyModel.addMessage({ code: -1, message: "Lỗi khi gửi đánh giá" })
-            );
-          } finally {
-            review.submitting = false;
-          }
-        }
-      },
+  // Data for reviews
+  reviews: [],
+  reviewsLoading: false
+});
+const {
+  activeTab,
+  showReviewsTab,
+  showDetails,
+  list,
+  currentPage,
+  numberOfElement,
+  perPage,
+  pageOptions,
+  totalRows,
+  model,
+  orderLogs,
+  cancellationReason,
+  theModal,
+  expandedOrders,
+  reviews,
+  reviewsLoading
+} = toRefs(state);
+async function getData() {
+  const authUser = JSON.parse(localStorage.getItem('auth-user'));
+  let params = {
+    id: authUser.id
+  };
+  await proxy.$store.dispatch("shippingStore/getByIdCustomer", params).then(res => {
+    if (res != null && res.code === 0) {
+      state.list = res.data;
+      console.log("LIST: ", state.list);
     }
-    </script>
+  });
+}
+async function handleGetInfo(id) {
+  await proxy.$store.dispatch("shippingStore/getByIdOrder", {
+    id: id
+  }).then(res => {
+    if (res != null && res.code === 0) {
+      state.orderLogs = res.data || [];
+      state.model = state.orderLogs[0] || {};
+      console.log("MODEL: ", state.model);
+    }
+  });
+}
+async function handleSubmit() {
+  const authUser = JSON.parse(localStorage.getItem('auth-user') || 'null');
+  if (!authUser?.id) {
+    return;
+  }
+  let params = {
+    id: state.model.id,
+    ordersId: state.model.ordersId,
+    customerId: authUser.id,
+    status: 3
+  };
+  await proxy.$store.dispatch("shippingStore/updateCustomer", params).then(res => {
+    if (res != null && res.code === 0) {
+      getData();
+      state.theModal.hide();
+    }
+    proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+  });
+}
+async function handleCancelOrder() {
+  const authUser = JSON.parse(localStorage.getItem('auth-user') || 'null');
+  if (!authUser?.id || !state.model?.id || !state.cancellationReason) return;
+
+  const res = await proxy.$store.dispatch("shippingStore/updateCustomer", {
+    id: state.model.id,
+    ordersId: state.model.ordersId,
+    customerId: authUser.id,
+    status: 4,
+    note: state.cancellationReason
+  });
+  if (res?.code === 0) {
+    state.cancellationReason = "";
+    state.theModal.hide();
+    getData();
+  }
+  proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+}
+function toggleDetails(index) {
+  proxy.orders[index].showDetails = !proxy.orders[index].showDetails;
+}
+function formatCurrency(value) {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND'
+  }).format(value);
+}
+function calculateSubTotal(orderItems) {
+  if (!orderItems) return 0;
+  return orderItems.reduce((total, item) => total + item.price * item.quantity, 0);
+}
+function toggleOrderDetails(orderId) {
+  // Đảo trạng thái (nếu không có key thì mặc định là true)
+  state.expandedOrders = {
+    ...state.expandedOrders,
+    [orderId]: !state.expandedOrders[orderId]
+  };
+}
+function isOrderExpanded(orderId) {
+  // Kiểm tra trạng thái (mặc định false nếu không có key)
+  return !!state.expandedOrders[orderId];
+}
+function formatDate(isoString) {
+  if (!isoString) return "N/A"; // Xử lý giá trị rỗng
+  // Xử lý giá trị rỗng
+  try {
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return "N/A"; // Kiểm tra Date hợp lệ
+    return new Intl.DateTimeFormat('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    }).format(date);
+  } catch (e) {
+    return "N/A"; // Phòng lỗi bất ngờ
+  }
+}
+async function loadReviews() {
+  state.reviewsLoading = true;
+  const authUser = JSON.parse(localStorage.getItem('auth-user'));
+  let params = {
+    start: state.currentPage,
+    limit: state.perPage,
+    idDonViCha: authUser.id
+  };
+  await proxy.$store.dispatch("odersStore/getPagingParamsStatus3Customer", params).then(response => {
+    if (response != null && response.code === 0) {
+      state.list = (response.data.data || []).map(order => ({
+        ...order,
+        items: (order.items || []).map(item => ({
+          ...item,
+          productId: item.products?.id,
+          orderId: order.id,
+          rating: 0,
+          comment: '',
+          submitting: false,
+          submitted: false
+        }))
+      }));
+      state.totalRows = response.data.totalRows;
+      state.numberOfElement = response.data.data.length;
+
+      // this.reviews = this.list.map(item => ({
+      //   ...item,
+      //   rating: item.rating || 0,
+      //   comment: item.comment || '',
+      //   submitting: false
+      // }));
+      console.log("LIST ĐÁNH GIÁ: ", state.list);
+    }
+    proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(response));
+    state.reviewsLoading = false;
+  });
+  // try {
+  //   this.reviewsLoading = true;
+  //   const authUser = JSON.parse(localStorage.getItem('auth-user'));
+  //   let params = {
+  //     start: this.currentPage,
+  //     limit: this.perPage,
+  //     idDonViCha: authUser.id
+  //   }
+  //   const response = await this.$store.dispatch("odersStore/getPagingParamsStatus3Customer", params);
+
+  //   if (response?.code === 0) {
+  //     this.reviews = response.data.map(item => ({
+  //       ...item,
+  //       rating: item.rating || 0,
+  //       comment: item.comment || '',
+  //       submitting: false
+  //     }));
+  //   }
+  // } catch (error) {
+  //   console.error("Error loading reviews:", error);
+  //   this.$store.dispatch("snackBarStore/addNotify",
+  //     notifyModel.addMessage({ code: -1, message: "Lỗi khi tải danh sách đánh giá" })
+  //   );
+  // } finally {
+  //   this.reviewsLoading = false;
+  // }
+}
+function updateRating(review, rating) {
+  review.rating = rating;
+}
+async function submitReview(review) {
+  try {
+    review.submitting = true;
+    const authUser = JSON.parse(localStorage.getItem('auth-user'));
+    const payload = {
+      productId: review.productId,
+      orderId: review.orderId,
+      totalStar: review.rating,
+      comment: review.comment
+    };
+    const response = await proxy.$store.dispatch("danhGiaStore/create", payload);
+    if (response?.code === 0) {
+      proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage({
+        code: 0,
+        message: "Đánh giá đã được gửi thành công!"
+      }));
+      // Xóa khỏi danh sách sau khi gửi thành công
+      review.submitted = true;
+    }
+  } catch (error) {
+    console.error("Error submitting review:", error);
+    proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage({
+      code: -1,
+      message: "Lỗi khi gửi đánh giá"
+    }));
+  } finally {
+    review.submitting = false;
+  }
+}
+const filteredOrders = computed(() => {
+  // Có thể thêm filter nếu cần
+  return state.list;
+});
+watch(() => state.activeTab, newVal => {
+  if (newVal === 'reviews') {
+    loadReviews();
+  }
+});
+watch(() => state.perPage, val => {
+  getData();
+}, {
+  deep: true
+});
+watch(() => state.currentPage, val => {
+  getData();
+}, {
+  deep: true
+});
+onMounted(() => {
+  state.theModal = new Modal(document.getElementById('info_modal'));
+});
+getData();
+</script>
   
   <style scoped>
   .timeline {

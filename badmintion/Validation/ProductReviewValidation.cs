@@ -13,10 +13,14 @@ namespace badmintion.Validation
 
 
             RuleFor(model => model.TotalStar)
-          .NotEmpty().WithMessage("TotalStar không được để trống.")
           .NotNull().WithMessage("TotalStar không được để null.")
+          .InclusiveBetween(1, 5).WithMessage("Số sao phải từ 1 đến 5.")
           .OverridePropertyName(x => x.TotalStar);
 
+            RuleFor(model => model.OrderId)
+          .NotNull().WithMessage("OrderId không được để null.")
+          .GreaterThan(0).WithMessage("OrderId không hợp lệ.")
+          .OverridePropertyName(x => x.OrderId);
 
         }
     }

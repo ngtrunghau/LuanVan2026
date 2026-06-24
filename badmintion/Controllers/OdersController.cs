@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace badmintion.Controllers
 {
     [Authorize]
-    [Route("api/v1/[controller]")]
+    [Route("api/[controller]")]
     public class OdersController : DefaultReposityController<Order>
     {
         private readonly IOdersService _service;

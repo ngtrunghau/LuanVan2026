@@ -62,8 +62,8 @@ public partial class BadmintionNlContext : DbContext
     public virtual DbSet<WareHouse> WareHouses { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Server=localhost;Database=badmintion_nl;Trusted_Connection=True; TrustServerCertificate=True;");
+    {
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -145,6 +145,9 @@ public partial class BadmintionNlContext : DbContext
             entity.Property(e => e.Password)
                 .HasMaxLength(255)
                 .HasColumnName("password");
+            entity.Property(e => e.PasswordChangedAt)
+                .HasColumnType("datetime")
+                .HasColumnName("password_changed_at");
             entity.Property(e => e.Phone)
                 .HasMaxLength(10)
                 .HasColumnName("phone");
@@ -282,6 +285,10 @@ public partial class BadmintionNlContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("order_date");
             entity.Property(e => e.Status).HasColumnName("status");
+            entity.Property(e => e.PromotionId).HasColumnName("promotion_id");
+            entity.Property(e => e.DiscountAmount)
+                .HasColumnType("decimal(18, 2)")
+                .HasColumnName("discount_amount");
             entity.Property(e => e.TotalAmount)
                 .HasColumnType("decimal(18, 0)")
                 .HasColumnName("total_amount");
@@ -390,6 +397,18 @@ public partial class BadmintionNlContext : DbContext
                 .HasColumnName("date");
             entity.Property(e => e.IsDeleted).HasColumnName("is_deleted");
             entity.Property(e => e.ProductId).HasColumnName("product_id");
+            entity.Property(e => e.CustomerId).HasColumnName("customer_id");
+            entity.Property(e => e.OrderId).HasColumnName("order_id");
+            entity.Property(e => e.ModerationStatus).HasColumnName("moderation_status");
+            entity.Property(e => e.ModerationReason)
+                .HasMaxLength(500)
+                .HasColumnName("moderation_reason");
+            entity.Property(e => e.ModeratedAt)
+                .HasColumnType("datetime")
+                .HasColumnName("moderated_at");
+            entity.Property(e => e.ModeratedBy)
+                .HasMaxLength(100)
+                .HasColumnName("moderated_by");
             entity.Property(e => e.TotalStar).HasColumnName("total_star");
             entity.Property(e => e.UrlImg)
                 .HasMaxLength(255)
@@ -420,6 +439,17 @@ public partial class BadmintionNlContext : DbContext
             entity.Property(e => e.MinOrderValue)
                 .HasColumnType("decimal(18, 0)")
                 .HasColumnName("min_order_value");
+            entity.Property(e => e.Code)
+                .HasMaxLength(50)
+                .HasColumnName("code");
+            entity.Property(e => e.StartDate)
+                .HasColumnType("datetime")
+                .HasColumnName("start_date");
+            entity.Property(e => e.EndDate)
+                .HasColumnType("datetime")
+                .HasColumnName("end_date");
+            entity.Property(e => e.MaxUsage).HasColumnName("max_usage");
+            entity.Property(e => e.UsedCount).HasColumnName("used_count");
         });
 
         modelBuilder.Entity<Province>(entity =>
@@ -503,6 +533,15 @@ public partial class BadmintionNlContext : DbContext
             entity.Property(e => e.IsDeleted).HasColumnName("is_deleted");
             entity.Property(e => e.OrdersId).HasColumnName("orders_id");
             entity.Property(e => e.Status).HasColumnName("status");
+            entity.Property(e => e.Note)
+                .HasMaxLength(500)
+                .HasColumnName("note");
+            entity.Property(e => e.ChangedBy)
+                .HasMaxLength(100)
+                .HasColumnName("changed_by");
+            entity.Property(e => e.ChangedByType)
+                .HasMaxLength(30)
+                .HasColumnName("changed_by_type");
 
             entity.HasOne(d => d.Orders).WithMany(p => p.ShippingDetails)
                 .HasForeignKey(d => d.OrdersId)
@@ -551,6 +590,9 @@ public partial class BadmintionNlContext : DbContext
             entity.Property(e => e.Password)
                 .HasMaxLength(255)
                 .HasColumnName("password");
+            entity.Property(e => e.PasswordChangedAt)
+                .HasColumnType("datetime")
+                .HasColumnName("password_changed_at");
             entity.Property(e => e.UnitRoleId).HasColumnName("unit_role_id");
             entity.Property(e => e.UserName)
                 .HasMaxLength(255)

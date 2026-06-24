@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace badmintion.Controllers.CustomerController
 {
-    [Route("api/v1/Customer/[controller]")]
+    [Route("api/Customer/[controller]")]
     public class CategoriesController : DefaultReposityController<Category>
     {
         private readonly ICategoriesService _service;

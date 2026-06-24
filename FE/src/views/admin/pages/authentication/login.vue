@@ -87,72 +87,64 @@
   <!-- /Main Wrapper -->
 </template>
 
-<script>
+<script setup>
+import { computed, getCurrentInstance, reactive, toRefs } from "vue";
 import { Form, Field } from "vee-validate";
 import * as Yup from "yup";
 import { router } from "@/router";
-export default {
-  components: {
-    Form,
-    Field,
-  },
-  data() {
-    return {
-      showPassword: false,
-      password: null,
-      emailError: "",
-      passwordError: "",
-    };
-  },
-  computed: {
-    buttonLabel() {
-      return this.showPassword ? "Hide" : "Show";
-    },
-  },
-  methods: {
-    toggleShow() {
-      this.showPassword = !this.showPassword;
-    },
-    onSubmit(values) {
-      this.emailError = "";
-      this.passwordError = "";
-
-      let data = localStorage.getItem("storedData");
-      var Pdata = JSON.parse(data);
-      const Eresult = Pdata.find(({ email }) => email === values.email);
-      if (Eresult) {
-        if (Eresult.password === values.password) {
-          this.$router.push("index"); // Use this.$router instead of router
-        } else {
-          this.passwordError = "Incorrect password";
-        }
-      } else {
-        this.emailError = "Email is not valid";
-      }
-    },
-  },
-  setup() {
-    let users = localStorage.getItem("storedData");
-    if (users === null) {
-      let password = [
-        {
-          email: "example@dreamstechnologies.com",
-          password: "123456",
-        },
-      ];
-      const jsonData = JSON.stringify(password);
-      localStorage.setItem("storedData", jsonData);
+defineOptions({
+  name: "/admin/login"
+});
+const {
+  proxy
+} = getCurrentInstance();
+const state = reactive({
+  showPassword: false,
+  password: null,
+  emailError: "",
+  passwordError: ""
+});
+const {
+  showPassword,
+  password,
+  emailError,
+  passwordError
+} = toRefs(state);
+let users = localStorage.getItem("storedData");
+if (users === null) {
+  let password = [{
+    email: "example@dreamstechnologies.com",
+    password: "123456"
+  }];
+  const jsonData = JSON.stringify(password);
+  localStorage.setItem("storedData", jsonData);
+}
+const schema = Yup.object().shape({
+  email: Yup.string().required("Email is required").email("Email is invalid"),
+  password: Yup.string().min(6, "Password must be at least 6 characters").required("Password is required")
+});
+function toggleShow() {
+  state.showPassword = !state.showPassword;
+}
+function onSubmit(values) {
+  state.emailError = "";
+  state.passwordError = "";
+  let data = localStorage.getItem("storedData");
+  var Pdata = JSON.parse(data);
+  const Eresult = Pdata.find(({
+    email
+  }) => email === values.email);
+  if (Eresult) {
+    if (Eresult.password === values.password) {
+      proxy.$router.push("index"); // Use this.$router instead of router
+    } else {
+      state.passwordError = "Incorrect password";
     }
-    const schema = Yup.object().shape({
-      email: Yup.string().required("Email is required").email("Email is invalid"),
-      password: Yup.string()
-        .min(6, "Password must be at least 6 characters")
-        .required("Password is required"),
-    });
-    return {
-      schema,
-    };
-  },
-  name: "/admin/login",
-};
+  } else {
+    state.emailError = "Email is not valid";
+  }
+}
+const buttonLabel = computed(() => {
+  return state.showPassword ? "Hide" : "Show";
+});
 </script>

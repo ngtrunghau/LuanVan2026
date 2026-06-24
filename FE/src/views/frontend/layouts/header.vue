@@ -160,189 +160,180 @@
   <!-- /Header -->
 </template>
 
-<script>
+<script setup>
+import { computed, getCurrentInstance, onBeforeUnmount, onMounted, reactive, toRefs } from "vue";
 import { notifyModel } from "@/models/notifyModel";
-
-export default {
-  data() {
-    return {
-      isScrolled: false,
-      isSidebarOpen: false,
-      isVisible: false,
-      currentUserAuth: null,
-      cartItems: [],
-      cartTotal: 0,
-      cartCount: 0,
-      showDropdown: false,
-      defaultAvatar: require('@/assets/img/caulong/logo/logoNTH_removeBackground.png'),
-      defaultProductImage: require('@/assets/img/caulong/logo/logoNTH_removeBackground.png')
-    };
-  },
-  mounted() {
-    window.addEventListener("scroll", this.handleScroll);
-    this.loadAuthUser();
-    this.loadCartData();
-    window.addEventListener("storage", this.handleStorageChange);
-    window.addEventListener("cart-updated", this.loadCartData);
-  },
-  beforeUnmount() {
-    window.removeEventListener("scroll", this.handleScroll);
-    window.removeEventListener("storage", this.handleStorageChange);
-    window.removeEventListener("cart-updated", this.loadCartData);
-  },
-  created() {
-    this.closeSidebar();
-  },
-  methods: {
-    loadAuthUser() {
-      const authUser = localStorage.getItem("auth-user");
-      this.currentUserAuth = authUser ? JSON.parse(authUser) : null;
-    },
-    loadCartData() {
-      // Ưu tiên lấy từ auth-user nếu đã đăng nhập
-      let cartData = [];
-      const authUser = JSON.parse(localStorage.getItem("auth-user"));
-      
-      if (authUser?.cart) {
-        cartData = authUser.cart;
-      } else {
-        cartData = JSON.parse(localStorage.getItem("cart")) || [];
-      }
-
-      this.cartItems = cartData;
-      this.cartTotal = this.formatCurrency(
-        cartData.reduce((sum, item) => sum + item.price * item.quantity, 0)
-      );
-      this.cartCount = cartData.reduce((total, item) => total + item.quantity, 0);
-    },
-    handleStorageChange(event) {
-      if (event.key === "auth-user" || event.key === "cart") {
-        this.loadAuthUser();
-        this.loadCartData();
-      }
-    },
-    removeCartItem(index) {
-      const authUser = JSON.parse(localStorage.getItem("auth-user"));
-      
-      if (authUser?.cart) {
-        authUser.cart.splice(index, 1);
-        localStorage.setItem("auth-user", JSON.stringify(authUser));
-      } else {
-        const cart = JSON.parse(localStorage.getItem("cart")) || [];
-        cart.splice(index, 1);
-        localStorage.setItem("cart", JSON.stringify(cart));
-      }
-      
-      this.loadCartData();
-      window.dispatchEvent(new CustomEvent("cart-updated"));
-    },
-    updateQuantity(index, amount) {
-      const authUser = JSON.parse(localStorage.getItem("auth-user"));
-      let cartItems = authUser?.cart || JSON.parse(localStorage.getItem("cart")) || [];
-
-      if (cartItems[index]) {
-        const newQuantity = cartItems[index].quantity + amount;
-        if (newQuantity < 1) return;
-        
-        cartItems[index].quantity = newQuantity;
-        
-        if (authUser) {
-          authUser.cart = cartItems;
-          localStorage.setItem("auth-user", JSON.stringify(authUser));
-        } else {
-          localStorage.setItem("cart", JSON.stringify(cartItems));
-        }
-        
-        this.loadCartData();
-        window.dispatchEvent(new CustomEvent("cart-updated"));
-      }
-    },
-    formatCurrency(value) {
-      if (!value) return "0 đ";
-      return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" })
-        .format(value)
-        .replace("₫", "đ");
-    },
-    logout() {
-      // 1. Xóa toàn bộ dữ liệu liên quan đến giỏ hàng
-      localStorage.removeItem("cart");
-      
-      // 2. Xóa dữ liệu đăng nhập
-      localStorage.removeItem("auth-user");
-      localStorage.removeItem("token");
-      localStorage.removeItem("user-token");
-      if (window.axios) {
-        delete window.axios.defaults.headers.common.Authorization;
-      }
-      
-      // 3. Reset dữ liệu trong component
-      this.currentUserAuth = null;
-      this.cartItems = [];
-      this.cartCount = 0;
-      this.cartTotal = this.formatCurrency(0);
-      
-      // 4. Thông báo cho các component khác biết giỏ hàng đã thay đổi
-      window.dispatchEvent(new CustomEvent("cart-updated"));
-      
-      // 5. Chuyển hướng về trang chủ nếu đang ở trang khác
-      if (this.$route.path !== "/") {
-        this.$router.push("/");
-      }
-      
-      // 6. Có thể thêm thông báo cho người dùng
-      this.$store.dispatch("snackBarStore/addNotify", {
-        message: "Đã đăng xuất thành công",
-        variant: "success"
-      });
-    },
-    handleCheckout() {
-      if (!this.currentUserAuth) {
-        // Lưu redirect URL để quay lại sau khi đăng nhập
-        localStorage.setItem("redirect-after-login", "/thanh-toan");
-        
-        // Hiển thị thông báo
-        this.$store.dispatch("snackBarStore/addNotify", {
-          message: "Vui lòng đăng nhập để thanh toán",
-          variant: "warning"
-        });
-        
-        // Chuyển đến trang đăng nhập
-        this.$router.push("/login");
-        return;
-      }
-      
-      // Nếu đã đăng nhập, chuyển đến trang thanh toán
-      this.$router.push("/thanh-toan");
-    },
-    handleScroll() {
-      this.isScrolled = window.scrollY > 35;
-    },
-    toggleSidebar() {
-      this.isSidebarOpen = !this.isSidebarOpen;
-      document.documentElement.classList.toggle("menu-opened");
-    },
-    closeSidebar() {
-      this.isSidebarOpen = false;
-      document.documentElement.classList.remove("menu-opened");
-    }
-  },
-  computed: {
-    isHomeOneRoute() {
-      return (
-        this.$route.path === "/" ||
-        this.$route.path.includes("/san-pham-chi-tiet/") ||
-        this.$route.path === "/san-pham-vot" ||
-        this.$route.path.includes("/san-pham/") ||
-        this.$route.path === "/gio-hang" ||
-        this.$route.path === "/dang-ky" ||
-        this.$route.path === "/don-hang" ||
-        this.$route.path === "/thong-tin-ca-nhan" ||
-        this.$route.path.includes("/don-hang/chi-tiet/") ||
-        this.$route.path === "/login"
-      );
-    }
+const {
+  proxy
+} = getCurrentInstance();
+const state = reactive({
+  isScrolled: false,
+  isSidebarOpen: false,
+  isVisible: false,
+  currentUserAuth: null,
+  cartItems: [],
+  cartTotal: 0,
+  cartCount: 0,
+  showDropdown: false,
+  defaultAvatar: require('@/assets/img/caulong/logo/logoNTH_removeBackground.png'),
+  defaultProductImage: require('@/assets/img/caulong/logo/logoNTH_removeBackground.png')
+});
+const {
+  isScrolled,
+  isSidebarOpen,
+  isVisible,
+  currentUserAuth,
+  cartItems,
+  cartTotal,
+  cartCount,
+  showDropdown,
+  defaultAvatar,
+  defaultProductImage
+} = toRefs(state);
+function loadAuthUser() {
+  const authUser = localStorage.getItem("auth-user");
+  state.currentUserAuth = authUser ? JSON.parse(authUser) : null;
+}
+function loadCartData() {
+  // Ưu tiên lấy từ auth-user nếu đã đăng nhập
+  let cartData = [];
+  const authUser = JSON.parse(localStorage.getItem("auth-user"));
+  if (authUser?.cart) {
+    cartData = authUser.cart;
+  } else {
+    cartData = JSON.parse(localStorage.getItem("cart")) || [];
   }
-};
+  state.cartItems = cartData;
+  state.cartTotal = formatCurrency(cartData.reduce((sum, item) => sum + item.price * item.quantity, 0));
+  state.cartCount = cartData.reduce((total, item) => total + item.quantity, 0);
+}
+function handleStorageChange(event) {
+  if (event.key === "auth-user" || event.key === "cart") {
+    loadAuthUser();
+    loadCartData();
+  }
+}
+function removeCartItem(index) {
+  const authUser = JSON.parse(localStorage.getItem("auth-user"));
+  if (authUser?.cart) {
+    authUser.cart.splice(index, 1);
+    localStorage.setItem("auth-user", JSON.stringify(authUser));
+  } else {
+    const cart = JSON.parse(localStorage.getItem("cart")) || [];
+    cart.splice(index, 1);
+    localStorage.setItem("cart", JSON.stringify(cart));
+  }
+  loadCartData();
+  window.dispatchEvent(new CustomEvent("cart-updated"));
+}
+function updateQuantity(index, amount) {
+  const authUser = JSON.parse(localStorage.getItem("auth-user"));
+  let cartItems = authUser?.cart || JSON.parse(localStorage.getItem("cart")) || [];
+  if (cartItems[index]) {
+    const newQuantity = cartItems[index].quantity + amount;
+    if (newQuantity < 1) return;
+    cartItems[index].quantity = newQuantity;
+    if (authUser) {
+      authUser.cart = cartItems;
+      localStorage.setItem("auth-user", JSON.stringify(authUser));
+    } else {
+      localStorage.setItem("cart", JSON.stringify(cartItems));
+    }
+    loadCartData();
+    window.dispatchEvent(new CustomEvent("cart-updated"));
+  }
+}
+function formatCurrency(value) {
+  if (!value) return "0 đ";
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND"
+  }).format(value).replace("₫", "đ");
+}
+function logout() {
+  // 1. Xóa toàn bộ dữ liệu liên quan đến giỏ hàng
+  localStorage.removeItem("cart");
+
+  // 2. Xóa dữ liệu đăng nhập
+  // 2. Xóa dữ liệu đăng nhập
+  localStorage.removeItem("auth-user");
+  localStorage.removeItem("token");
+  localStorage.removeItem("user-token");
+  if (window.axios) {
+    delete window.axios.defaults.headers.common.Authorization;
+  }
+
+  // 3. Reset dữ liệu trong component
+  // 3. Reset dữ liệu trong component
+  state.currentUserAuth = null;
+  state.cartItems = [];
+  state.cartCount = 0;
+  state.cartTotal = formatCurrency(0);
+
+  // 4. Thông báo cho các component khác biết giỏ hàng đã thay đổi
+  // 4. Thông báo cho các component khác biết giỏ hàng đã thay đổi
+  window.dispatchEvent(new CustomEvent("cart-updated"));
+
+  // 5. Chuyển hướng về trang chủ nếu đang ở trang khác
+  // 5. Chuyển hướng về trang chủ nếu đang ở trang khác
+  if (proxy.$route.path !== "/") {
+    proxy.$router.push("/");
+  }
+
+  // 6. Có thể thêm thông báo cho người dùng
+  // 6. Có thể thêm thông báo cho người dùng
+  proxy.$store.dispatch("snackBarStore/addNotify", {
+    message: "Đã đăng xuất thành công",
+    variant: "success"
+  });
+}
+function handleCheckout() {
+  if (!state.currentUserAuth) {
+    // Lưu redirect URL để quay lại sau khi đăng nhập
+    localStorage.setItem("redirect-after-login", "/thanh-toan");
+
+    // Hiển thị thông báo
+    proxy.$store.dispatch("snackBarStore/addNotify", {
+      message: "Vui lòng đăng nhập để thanh toán",
+      variant: "warning"
+    });
+
+    // Chuyển đến trang đăng nhập
+    proxy.$router.push("/login");
+    return;
+  }
+
+  // Nếu đã đăng nhập, chuyển đến trang thanh toán
+  // Nếu đã đăng nhập, chuyển đến trang thanh toán
+  proxy.$router.push("/thanh-toan");
+}
+function handleScroll() {
+  state.isScrolled = window.scrollY > 35;
+}
+function toggleSidebar() {
+  state.isSidebarOpen = !state.isSidebarOpen;
+  document.documentElement.classList.toggle("menu-opened");
+}
+function closeSidebar() {
+  state.isSidebarOpen = false;
+  document.documentElement.classList.remove("menu-opened");
+}
+const isHomeOneRoute = computed(() => {
+  return proxy.$route.path === "/" || proxy.$route.path.includes("/san-pham-chi-tiet/") || proxy.$route.path === "/san-pham-vot" || proxy.$route.path.includes("/san-pham/") || proxy.$route.path === "/gio-hang" || proxy.$route.path === "/dang-ky" || proxy.$route.path === "/don-hang" || proxy.$route.path === "/thong-tin-ca-nhan" || proxy.$route.path.includes("/don-hang/chi-tiet/") || proxy.$route.path === "/login";
+});
+onMounted(() => {
+  window.addEventListener("scroll", handleScroll);
+  loadAuthUser();
+  loadCartData();
+  window.addEventListener("storage", handleStorageChange);
+  window.addEventListener("cart-updated", loadCartData);
+});
+onBeforeUnmount(() => {
+  window.removeEventListener("scroll", handleScroll);
+  window.removeEventListener("storage", handleStorageChange);
+  window.removeEventListener("cart-updated", loadCartData);
+});
+closeSidebar();
 </script>
 
 <style scoped>

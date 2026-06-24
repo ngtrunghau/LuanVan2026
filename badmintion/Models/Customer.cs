@@ -16,9 +16,12 @@ public partial class Customer
 
     public string UserName { get; set; } = null!;
 
+    [System.Text.Json.Serialization.JsonIgnore]
     public string Password { get; set; } = null!;
 
     public bool? IsDeleted { get; set; }
+
+    public DateTime? PasswordChangedAt { get; set; }
 
     public virtual ICollection<AddressCustomer> AddressCustomers { get; set; } = new List<AddressCustomer>();
     [JsonIgnore]

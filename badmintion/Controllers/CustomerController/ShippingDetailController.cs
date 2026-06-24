@@ -9,7 +9,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace badmintion.Controllers.CustomerController
 {
-    [Route("api/v1/Customer/[controller]")]
+    [Microsoft.AspNetCore.Authorization.Authorize]
+    [Route("api/Customer/[controller]")]
     public class ShippingDetailController : DefaultReposityController<ShippingDetail>
     {
         private readonly IShippingDetailService _service;
@@ -70,6 +71,14 @@ namespace badmintion.Controllers.CustomerController
         {
             try
             {
+                if (!model.CustomerId.HasValue)
+                {
+                    return Ok(
+                        new ResultMessageResponse()
+                            .WithCode(DefaultCode.ERROR_STRUCTURE)
+                            .WithMessage("Thiếu thông tin khách hàng xác nhận đơn.")
+                    );
+                }
                 var response = await _service.Update(model);
                 return Ok(
                         new ResultMessageResponse()

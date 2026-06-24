@@ -1,5 +1,6 @@
 ﻿using badmintion.DTO;
 using badmintion.Interface;
+using badmintion.Interface.Core;
 using badmintion.Lib.Core.DefaultRepository;
 using badmintion.Models;
 using badmintion.Validation;
@@ -12,10 +13,15 @@ namespace badmintion.Services
     public class UserService : IUserService
     {
         private readonly BadmintionNlContext _context;
+        private readonly IPasswordService _passwordService;
 
-        public UserService(BadmintionNlContext context, IHttpContextAccessor contextAccessor)
+        public UserService(
+            BadmintionNlContext context,
+            IHttpContextAccessor contextAccessor,
+            IPasswordService passwordService)
         {
             _context = context;
+            _passwordService = passwordService;
         }
 
         public async Task<dynamic> Create(UserDTO model)
@@ -33,7 +39,7 @@ namespace badmintion.Services
                 {
                     Name = model.Name,
                     UserName = model.UserName,
-                    Password = model.Password,
+                    Password = _passwordService.Hash(model.Password!),
                     UnitRoleId = model.UnitRoleId,
                     IsDeleted = model.IsDeleted == null ? false : model.IsDeleted,
                 };
@@ -66,7 +72,6 @@ namespace badmintion.Services
                 {
                     Id = user.Id,
                     Name = user.Name,
-                    Password = user.Password,
                     Username = user.UserName,
                     IsDelete = user.IsDeleted ,
                     UnitRole = new
@@ -112,7 +117,10 @@ namespace badmintion.Services
                 existingCustomer.Name = model.Name;
                 existingCustomer.UnitRoleId = model.UnitRoleId;
                 existingCustomer.UserName = model.UserName;
-                existingCustomer.Password = model.Password;
+                if (!string.IsNullOrWhiteSpace(model.Password))
+                {
+                    existingCustomer.Password = _passwordService.Hash(model.Password);
+                }
                 existingCustomer.IsDeleted = model.IsDeleted;
                 var saveResult = await _context.SaveChangesAsync();
 

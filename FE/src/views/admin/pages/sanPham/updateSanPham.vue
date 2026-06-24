@@ -1,11 +1,11 @@
 <template>
     <div class="main-Wrapper">
-      <pharmacyheader></pharmacyheader>
-      <pharmacysidebar></pharmacysidebar>
+      <adminheader></adminheader>
+      <adminsidebar></adminsidebar>
       <!-- Page Wrapper -->
       <div class="page-wrapper">
         <div class="content container-fluid">
-          <pharmacybreadcrumb2 :title="title" />
+          <adminbreadcrumb2 :title="title" />
           <div class="row">
             <div class="col-md-12">
               <div class="card">
@@ -136,184 +136,167 @@
         </div>
       </div>
     </div>
-    <pharmacymodel />
-    <pharmacydelete />
   </template>
-  <script >
-  import VueMultiselect from 'vue-multiselect'
-  import Loading from "vue3-loading-overlay";
-  import Paginate from "vuejs-paginate-next";
-  import 'vue-multiselect/dist/vue-multiselect.css';
-  import SummernoteEditor from 'vue3-summernote-editor';
-  import Treeselect from 'vue3-treeselect'
-  import {sanPhamModel} from "@/models/sanPhamModel";
-  import '@vuepic/vue-datepicker/dist/main.css'
-  import ClassicEditor from "@/components/ckeditor5";
-  import {notifyModel} from "@/models/notifyModel";
-  import CKEditorCustom from "@/utils/view/CKEditorCustom.vue";
-  import { Form, Field } from "vee-validate";
-  import * as Yup from "yup";
-
-  export default {
-    components: {
-        Treeselect,
-        SummernoteEditor,
-        loading: Loading,
-        paginate: Paginate,
-        VueMultiselect,
-        CKEditorCustom,
-        Form,
-        Field,
-    },
-    data() {
-      return {
-        title: "CHI TIẾT SẢN PHẨM",
-        treeView: [],
-        listMenuMobi: [],
-        listService: [],
-        model: sanPhamModel.baseJson(),
-        urlFile:`${process.env.VUE_APP_API_URL}files/view/`,
-        // format : (date) => {
-        //   const day = date.getDate();
-        //   const month = date.getMonth() + 1;
-        //   const year = date.getFullYear();
-        //   return `${day}/${month}/${year}`;
-        // },
-        format : `dd/MM/yyyy`,
-        locale: 'vi',
-        editor: ClassicEditor,
-        isFileOver: false,
-        file: null,
-        filePreview: null,
-        keyId : null,
-        listLoai: [],
-
-      };
-    },
-    name: "pharmacy/user",
-
-    created() {
-      this.getListLoai();
-      this.handleInfo();
-    },
-
-    watch: {
-
-    },
-
-    setup() {
-      const schema = Yup.object().shape({
-          name: Yup.string().required("Tên sản phẩm không được bỏ trống !"),
-          
-        });
-      return {
-          schema,
-      };
-    },
-
-    methods: {
-      getAuthHeaders() {
-        const token = localStorage.getItem("token");
-        return token ? { Authorization: `Bearer ${token}` } : {};
-      },
-        async getListLoai(){
-            await  this.$store.dispatch("loaiStore/getAll").then((res) =>{
-                    if (res != null && res.code ===0) {
-                    this.listLoai = res.data || [];
-                    }
-            })
-        },
-
-        async handleSubmit() {
-          this.model.categoriesId = this.model.categories.id
-            await this.$store.dispatch("sanPhamStore/update", this.model).then((res) => {
-                if (res != null && res.code ===0) {
-                //  this.getData();
-                this.$router.push('/quan-tri/quan-ly-san-pham')
-                }
-                this.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-            });
-        },
-      
-
-        async handleInfo() {
-            const params = {
-                id: this.$route.params.id
-            }
-            await this.$store.dispatch("sanPhamStore/getById", params).then((res) => {
-            //  console.log("ID: ", res);
-                if (res.code===0) {
-                    console.log(res)
-                    this.model = sanPhamModel.getJson(res.data);
-                    console.log("Danh sách loại sản phẩm:", this.listLoai);
-                    console.log("ID danh mục cần tìm:", res.data.categoriesId);
-                    this.model.categories = this.listLoai.find(cat => cat.id === res.data.categoriesId) || null;
-                    console.log("LIST SAN PHAM: ", this.model);
-                    // this.$refs.form.setFieldValue('fileImage', res.data.fileImage || null);
-                } else {
-                this.$store.dispatch("snackBarStore/addNotify", {
-                    message: res.message,
-                    code: res.code,
-                });
-                }
-            });
-        },
-        getColorWithExtFile(ext) {
-            if (ext == '.png' || ext == '.jpg'|| ext == '.jpeg' )
-                return 'text-danger';
-
-            },
-        getIconWithExtFile(ext) {
-            if (ext == '.png' || ext == '.jpg'|| ext == '.jpeg')
-                return 'mdi mdi-file-image-outline';
-        },
-
-        deleteImage() {
-            if (this.model != null && this.model.icon != null) {
-                //console.log("LOG this.model : ", this.model)
-            axios.post(`${process.env.VUE_APP_API_URL}file/delete/${this.model.icon.fileId}`, null, {
-              headers: this.getAuthHeaders()
-            }).then((response) => {
-                    this.model.icon = null;
-                    // console.log('log model file remove', this.model.icon);
-                }).catch((error) => {
-                    // Handle error here
-                    //  console.error('Error deleting file:', error);
-                });
-            }
-        },
-        async upload() {
-            if ( event.target &&  event.target.files.length > 0 ) {
-            const formData = new FormData()
-            // formData.append('code', "ICON")
-            formData.append('files', event.target.files[0])
-            axios.post(`${process.env.VUE_APP_API_URL}File/upload`, formData, {
-              headers: this.getAuthHeaders()
-            }).then((response) => {
-                let resultData = response.data
-                if (response.data.code == 0){
-                this.model.imageUrl = resultData.data
-                console.log("LOG UPDATE : ", resultData.data);
-                }
-            })
-            }
-        },
-      addNodeToModel(node ){
-        if(node != null && node.id){
-         // console.log("LOG ADD NODE TO MODEL : ", node);
-          this.model.menu = { id : node.id , name : node.label };
-        }
-      },
-      normalizer(node){
-        if(node.children == null || node.children == 'null'){
-          delete node.children;
-        }
-      },
-      
-
+  <script setup>
+import { getCurrentInstance, reactive, toRefs, watch } from "vue";
+import VueMultiselect from 'vue-multiselect';
+import Loading from "vue3-loading-overlay";
+import Paginate from "vuejs-paginate-next";
+import 'vue-multiselect/dist/vue-multiselect.css';
+import SummernoteEditor from 'vue3-summernote-editor';
+import Treeselect from 'vue3-treeselect';
+import { sanPhamModel } from "@/models/sanPhamModel";
+import '@vuepic/vue-datepicker/dist/main.css';
+import ClassicEditor from "@/components/ckeditor5";
+import { notifyModel } from "@/models/notifyModel";
+import CKEditorCustom from "@/utils/view/CKEditorCustom.vue";
+import { Form, Field } from "vee-validate";
+import * as Yup from "yup";
+defineOptions({
+  name: "admin/page"
+});
+const {
+  proxy
+} = getCurrentInstance();
+const state = reactive({
+  title: "CHI TIẾT SẢN PHẨM",
+  treeView: [],
+  listMenuMobi: [],
+  listService: [],
+  model: sanPhamModel.baseJson(),
+  urlFile: `${process.env.VUE_APP_API_URL}files/view/`,
+  // format : (date) => {
+  //   const day = date.getDate();
+  //   const month = date.getMonth() + 1;
+  //   const year = date.getFullYear();
+  //   return `${day}/${month}/${year}`;
+  // },
+  format: `dd/MM/yyyy`,
+  locale: 'vi',
+  editor: ClassicEditor,
+  isFileOver: false,
+  file: null,
+  filePreview: null,
+  keyId: null,
+  listLoai: []
+});
+const {
+  title,
+  treeView,
+  listMenuMobi,
+  listService,
+  model,
+  urlFile,
+  format,
+  locale,
+  editor,
+  isFileOver,
+  file,
+  filePreview,
+  keyId,
+  listLoai
+} = toRefs(state);
+const schema = Yup.object().shape({
+  name: Yup.string().required("Tên sản phẩm không được bỏ trống !")
+});
+function getAuthHeaders() {
+  const token = localStorage.getItem("token");
+  return token ? {
+    Authorization: `Bearer ${token}`
+  } : {};
+}
+async function getListLoai() {
+  await proxy.$store.dispatch("loaiStore/getAll").then(res => {
+    if (res != null && res.code === 0) {
+      state.listLoai = res.data || [];
     }
+  });
+}
+async function handleSubmit() {
+  state.model.categoriesId = state.model.categories.id;
+  await proxy.$store.dispatch("sanPhamStore/update", state.model).then(res => {
+    if (res != null && res.code === 0) {
+      //  this.getData();
+      proxy.$router.push('/quan-tri/quan-ly-san-pham');
+    }
+    proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
+  });
+}
+async function handleInfo() {
+  const params = {
+    id: proxy.$route.params.id
   };
-  </script>
+  await proxy.$store.dispatch("sanPhamStore/getById", params).then(res => {
+    //  console.log("ID: ", res);
+    if (res.code === 0) {
+      console.log(res);
+      state.model = sanPhamModel.getJson(res.data);
+      console.log("Danh sách loại sản phẩm:", state.listLoai);
+      console.log("ID danh mục cần tìm:", res.data.categoriesId);
+      state.model.categories = state.listLoai.find(cat => cat.id === res.data.categoriesId) || null;
+      console.log("LIST SAN PHAM: ", state.model);
+      // this.$refs.form.setFieldValue('fileImage', res.data.fileImage || null);
+    } else {
+      proxy.$store.dispatch("snackBarStore/addNotify", {
+        message: res.message,
+        code: res.code
+      });
+    }
+  });
+}
+function getColorWithExtFile(ext) {
+  if (ext == '.png' || ext == '.jpg' || ext == '.jpeg') return 'text-danger';
+}
+function getIconWithExtFile(ext) {
+  if (ext == '.png' || ext == '.jpg' || ext == '.jpeg') return 'mdi mdi-file-image-outline';
+}
+function deleteImage() {
+  if (state.model != null && state.model.icon != null) {
+    //console.log("LOG this.model : ", this.model)
+    axios.post(`${process.env.VUE_APP_API_URL}file/delete/${state.model.icon.fileId}`, null, {
+      headers: getAuthHeaders()
+    }).then(response => {
+      state.model.icon = null;
+      // console.log('log model file remove', this.model.icon);
+    }).catch(error => {
+      // Handle error here
+      //  console.error('Error deleting file:', error);
+    });
+  }
+}
+async function upload() {
+  if (event.target && event.target.files.length > 0) {
+    const formData = new FormData();
+    // formData.append('code', "ICON")
+    formData.append('files', event.target.files[0]);
+    axios.post(`${process.env.VUE_APP_API_URL}File/upload`, formData, {
+      headers: getAuthHeaders()
+    }).then(response => {
+      let resultData = response.data;
+      if (response.data.code == 0) {
+        state.model.imageUrl = resultData.data;
+        console.log("LOG UPDATE : ", resultData.data);
+      }
+    });
+  }
+}
+function addNodeToModel(node) {
+  if (node != null && node.id) {
+    // console.log("LOG ADD NODE TO MODEL : ", node);
+    state.model.menu = {
+      id: node.id,
+      name: node.label
+    };
+  }
+}
+function normalizer(node) {
+  if (node.children == null || node.children == 'null') {
+    delete node.children;
+  }
+}
+getListLoai();
+handleInfo();
+</script>
 
 <style>
 
