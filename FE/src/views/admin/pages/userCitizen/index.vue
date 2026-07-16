@@ -71,7 +71,7 @@
                         <div>
                           Hiển thị
                           <label class="d-inline-flex align-items-center" style="color: #F5E7B2;">
-                            {{ this.listUser.length }}
+                            {{ listUser.length }}
                           </label>
                           trên tổng số <span style="color: red; font-weight: bold;">{{ totalRows }}</span> dòng
                         </div>
@@ -451,9 +451,6 @@
                                 aria-label="Close"
                             ></b-button>
                             </div>
-                            <div class="modal-body" style="font-weight: 500;">
-                                <p id="acc_msg">Bạn chắc chắn muốn đặt mật khẩu lại mặc định: PhuongThanh#2o24</p>
-                            </div>
                             <div class="modal-footer">
                             <b-button class="btn btn-delete w-md si_accept_cancel" v-on:click="handleReset" data-bs-dismiss="modal">
                                 Khôi phục
@@ -586,9 +583,10 @@ async function getData() {
   };
   await proxy.$store.dispatch("userCitizenStore/getPagingParams", params).then(res => {
     if (res != null && res.code === 0) {
-      state.listUser = res.data.data;
-      state.totalRows = res.data.totalRows;
-      state.numberOfElement = res.data.data.length;
+      const users = res.data?.data || [];
+      state.listUser = users;
+      state.totalRows = res.data?.totalRows || 0;
+      state.numberOfElement = users.length;
     }
   });
 }

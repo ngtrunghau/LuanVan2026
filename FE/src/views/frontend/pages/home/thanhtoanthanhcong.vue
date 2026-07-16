@@ -78,9 +78,7 @@ function goToOrderDetail() {
 state.orderInfo = {
   orderId: proxy.$route.query.orderId,
   amount: proxy.$route.query.amount,
-  paymentMethod: proxy.$route.query.paymentMethod === 'cod'
-    ? 'Thanh toán khi nhận hàng'
-    : 'Chuyển khoản thủ công'
+  paymentMethod: 'Thanh toán khi nhận hàng'
 };
 
 // Hoặc lấy từ Vuex store nếu bạn lưu ở đó

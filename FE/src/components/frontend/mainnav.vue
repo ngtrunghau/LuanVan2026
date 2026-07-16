@@ -21,11 +21,6 @@
         </router-link>
       </li>
       <!-- <li class="has-submenu megamenu">
-        <router-link to="/san-pham-vot">
-          Vợt cầu lông
-        </router-link>
-      </li>
-      <li class="has-submenu megamenu">
         <router-link to="/san-pham-all">
           Giày cầu lông
         </router-link>

@@ -151,7 +151,7 @@
             </div>
           </div>
           
-          <div v-else-if="this.list.length === 0" class="alert alert-info">
+          <div v-else-if="list.length === 0" class="alert alert-info">
             Bạn chưa có sản phẩm nào cần đánh giá
           </div> -->
           

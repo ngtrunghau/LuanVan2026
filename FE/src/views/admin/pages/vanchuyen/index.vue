@@ -20,7 +20,7 @@
                         <div>
                           Hiển thị
                           <label class="d-inline-flex align-items-center" style="color: #F5E7B2;">
-                            {{ this.list.length }}
+                            {{ list.length }}
                           </label>
                           trên tổng số <span style="color: red; font-weight: bold;">{{ totalRows }}</span> dòng
                         </div>
@@ -402,9 +402,10 @@ async function getData() {
   };
   await proxy.$store.dispatch("shippingStore/getPagingParams", params).then(res => {
     if (res != null && res.code === 0) {
-      state.list = res.data.data;
-      state.totalRows = res.data.totalRows;
-      state.numberOfElement = res.data.data.length;
+      const items = res.data?.data || [];
+      state.list = items;
+      state.totalRows = res.data?.totalRows || 0;
+      state.numberOfElement = items.length;
       state.list = state.list.map(user => {
         return {
           ...user,

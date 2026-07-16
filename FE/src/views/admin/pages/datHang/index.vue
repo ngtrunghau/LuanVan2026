@@ -443,9 +443,10 @@ async function loadTabData(tabNumber) {
   await proxy.$store.dispatch(actionName, params).then(res => {
     if (res != null && res.code === 0) {
       const targetTab = tabNumber - 1; // Vì mảng bắt đầu từ 0
-      state.tabData[targetTab].list = res.data.data;
-      state.tabData[targetTab].totalRows = res.data.totalRows;
-      state.tabData[targetTab].numberOfElement = res.data.data.length;
+      const orders = res.data?.data || [];
+      state.tabData[targetTab].list = orders;
+      state.tabData[targetTab].totalRows = res.data?.totalRows || 0;
+      state.tabData[targetTab].numberOfElement = orders.length;
     }
     proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
   });

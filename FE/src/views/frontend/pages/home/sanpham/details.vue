@@ -15,8 +15,8 @@
                 <div class="row">
                         <!-- About Details -->
                         <div class="widget about-widget">
-                            <h4 class="widget-title">{{ this.list.name }}</h4>
-                            <span v-html="this.list.descriptions">
+                            <h4 class="widget-title">{{ list?.name }}</h4>
+                            <span v-html="list?.descriptions">
                             </span>
                         </div>
                         <!-- /About Details -->

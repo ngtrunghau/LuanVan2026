@@ -55,5 +55,4 @@ function formatCurrency(value) {
     object-fit: cover;
     border-radius: 8px;
   }
-  /* Thêm các style khác tùy ý */
-  </style>
+</style>

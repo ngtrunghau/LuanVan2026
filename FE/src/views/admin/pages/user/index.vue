@@ -81,7 +81,7 @@
                         <div>
                           Hiển thị
                           <label class="d-inline-flex align-items-center" style="color: #F5E7B2;">
-                            {{ this.listUser.length }}
+                            {{ listUser.length }}
                           </label>
                           trên tổng số <span style="color: red; font-weight: bold;">{{ totalRows }}</span> dòng
                         </div>
@@ -139,14 +139,6 @@
                             {{ item.unitRole?.name }}
                           </td>
                           <td style="text-align: center">
-                            <a
-                                href="#reset_user"
-                                data-bs-toggle="modal"
-                                class="btn btn-outline btn-sm"
-                                v-on:click="handleShowResetModal(item.id)"
-                            >
-                              <i class="fas fa-rotate text-danger me-1"></i>
-                            </a>
                             <a
                                 href="#info_modal"
                                 data-bs-toggle="modal"
@@ -329,42 +321,6 @@
                         </div>
                       </div>
                     </div>
-                    <div
-                        class="modal fade "
-                        id="reset_user"
-                        tabindex="-1"
-                        role="dialog"
-                        aria-hidden="true"
-                    >
-                      <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                            <h5 class="modal-title" id="acc_title">Bạn có chắc?</h5>
-                            <b-button
-                                type="button"
-                                class="btn-close"
-                                data-bs-dismiss="modal"
-                                aria-label="Close"
-                            ></b-button>
-                            </div>
-                            <div class="modal-body" style="font-weight: 500;">
-                                <p id="acc_msg">Bạn chắc chắn muốn đặt mật khẩu lại mặc định: PhuongThanh#2o24</p>
-                            </div>
-                            <div class="modal-footer">
-                            <b-button class="btn btn-delete w-md si_accept_cancel" v-on:click="handleReset" data-bs-dismiss="modal">
-                                Khôi phục
-                            </b-button>
-                            <b-button
-                                type="button"
-                                class="btn si_accept_cancel btn-submit w-md btn-out"
-                                data-bs-dismiss="modal"
-                            >
-                                Đóng
-                            </b-button>
-                            </div>
-                        </div>
-                      </div>
-                    </div>
                     <div class="row" >
                       <div class="col-md-6 col-sm-6 mt-2">
                         <div>
@@ -481,9 +437,10 @@ async function getData() {
   };
   await proxy.$store.dispatch("userStore/getPagingParams", params).then(res => {
     if (res != null && res.code === 0) {
-      state.listUser = res.data.data;
-      state.totalRows = res.data.totalRows;
-      state.numberOfElement = res.data.data.length;
+      const users = res.data?.data || [];
+      state.listUser = users;
+      state.totalRows = res.data?.totalRows || 0;
+      state.numberOfElement = users.length;
       state.listUser = state.listUser.map(user => {
         return {
           ...user,
@@ -518,10 +475,6 @@ function handleShowDeleteModal(id) {
   state.model.id = id;
   proxy.showDeleteModal = true;
 }
-function handleShowResetModal(id) {
-  state.model.id = id;
-  proxy.showResetModal = true;
-}
 async function handleDelete() {
   if (state.model.id != 0 && state.model.id != null && state.model.id) {
     await proxy.$store.dispatch("userStore/delete", {
@@ -529,19 +482,6 @@ async function handleDelete() {
     }).then(res => {
       if (res != null && res.code === 0) {
         proxy.showDeleteModal = false;
-        getData();
-      }
-      proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
-    });
-  }
-}
-async function handleReset() {
-  if (state.model.id != 0 && state.model.id != null && state.model.id) {
-    await proxy.$store.dispatch("userStore/reset", {
-      'id': state.model.id
-    }).then(res => {
-      if (res != null && res.code === 0) {
-        proxy.showResetModal = false;
         getData();
       }
       proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));

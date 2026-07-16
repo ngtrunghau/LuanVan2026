@@ -3,7 +3,7 @@
   <div class="container" style="padding-top: 150px;">
     <h1 class="mb-4">Theo dõi đơn hàng</h1>
     
-    <div class="card shadow" v-for="(item, index) in this.list" :key="index">
+    <div class="card shadow" v-for="(item, index) in list" :key="index">
       <div class="card-body">
         <!-- Thông tin cơ bản (luôn hiển thị) -->
         <div class="row mb-4">

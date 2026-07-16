@@ -57,7 +57,6 @@ import FooterHome from '@/views/frontend/pages/home/footerHome'
 
 import SanPhamDetail from '@/views/frontend/pages/home/sanpham/details.vue'
 import SanPhamSidebar from '@/views/frontend/pages/home/sanpham/sidebar.vue'
-import SanPhamVot from '@/views/frontend/pages/home/sanphamvot/content.vue'
 import SanPhamAll from '@/views/frontend/pages/home/sanphamall/content.vue'
 /***********************************************************************/
 
@@ -102,7 +101,6 @@ const app = createApp(App);
                       /*  CẦU LÔNG */
 app.component('SanPhamDetail',SanPhamDetail)
 app.component('SanPhamSidebar',SanPhamSidebar)
-app.component('SanPhamVot',SanPhamVot)
 app.component('SanPhamAll',SanPhamAll)
 
 

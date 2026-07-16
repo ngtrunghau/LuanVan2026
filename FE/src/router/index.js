@@ -11,7 +11,6 @@ import IndexFive from '@/views/frontend/pages/home/indexFive.vue'
 import Login from "@/views/frontend/pages/home/login.vue";
 import LoginQuanTri from "@/views/frontend/pages/home/loginquantri.vue";
 import SanPham from "@/views/frontend/pages/home/sanpham/index.vue";
-import SanPhamVot from "@/views/frontend/pages/home/sanphamvot/index.vue";
 import SanPhamByCategory from "@/views/frontend/pages/home/sanphamall/index.vue";
 import GioHang from "@/views/frontend/pages/home/giohang.vue";
 import ThanhToan from "@/views/frontend/pages/home/thanhtoan.vue";
@@ -41,10 +40,6 @@ import CanhBaoTonKho from '@/views/admin/pages/canhBaoTonKho/index.vue'
 import QuanLyDanhGia from '@/views/admin/pages/danhGia/index.vue'
 import ChiTietVanChuyen from '@/views/admin/pages/vanchuyen/index.vue'
 
-import AdminLogin from '@/views/admin/pages/authentication/login.vue'
-import AdminRegister from '@/views/admin/pages/authentication/register.vue'
-import AdminForgotPassword from '@/views/admin/pages/authentication/forgotPassword.vue'
-import AdminLockScreen from '@/views/admin/pages/authentication/lockScreen.vue'
 import AdminChangePassword from '@/views/admin/pages/authentication/changePassword.vue'
 import AdminError404 from '@/views/admin/pages/404/error404.vue'
 
@@ -85,11 +80,6 @@ const routes = [
         path: '/dang-nhap',
         name: 'dang-nhap',
         component: LoginQuanTri
-    },
-    {
-        path: '/san-pham-vot',
-        name: 'san-pham-vot',
-        component: SanPhamVot
     },
     {
         path: '/san-pham-chi-tiet/:id?',
@@ -152,25 +142,7 @@ const routes = [
         path: '/quan-tri/login',
         name: 'admin/login',
         alias: '/admin/login',
-        component: AdminLogin
-    },
-    {
-        path: '/quan-tri/register',
-        name: 'admin/register',
-        alias: '/admin/register',
-        component: AdminRegister
-    },
-    {
-        path: '/quan-tri/forgot-password',
-        name: 'admin/forgot-password',
-        alias: '/admin/forgot-password',
-        component: AdminForgotPassword
-    },
-    {
-        path: '/quan-tri/lock-screen',
-        name: 'admin/lock-screen',
-        alias: '/admin/lock-screen',
-        component: AdminLockScreen
+        component: LoginQuanTri
     },
     {
         path: '/quan-tri/quan-ly-san-pham',
@@ -294,9 +266,6 @@ export  const router = createRouter({
 
 const publicAdminRoutes = new Set([
     '/quan-tri/login',
-    '/quan-tri/register',
-    '/quan-tri/forgot-password',
-    '/quan-tri/lock-screen',
     '/quan-tri/error-404'
 ]);
 const protectedCustomerRoutes = new Set([

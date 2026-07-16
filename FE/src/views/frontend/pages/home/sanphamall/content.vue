@@ -6,18 +6,14 @@
       </div>
       <div class="col-md-8 col-12">
         <div class="d-flex flex-wrap gap-2 justify-content-md-end">
-          <b-form-input
-            v-model.number="filterMinPrice"
-            type="number"
-            min="0"
+          <CurrencyInput
+            v-model="filterMinPrice"
             placeholder="Giá từ"
             class="form-control form-control-sm"
             style="max-width: 140px;"
           />
-          <b-form-input
-            v-model.number="filterMaxPrice"
-            type="number"
-            min="0"
+          <CurrencyInput
+            v-model="filterMaxPrice"
             placeholder="Giá đến"
             class="form-control form-control-sm"
             style="max-width: 140px;"
@@ -43,7 +39,7 @@
     <div class="row">
       <div
         class="col-md-4 col-lg-3 col-xl-3 product-custom"
-        v-for="item in this.list"
+        v-for="item in list"
         :key="item.id"
       >
         <div class="profile-widget">
@@ -117,7 +113,8 @@
   </div>
 </template>
 <script setup>
-import { computed, getCurrentInstance, onMounted, reactive, toRefs, watch } from "vue";
+import CurrencyInput from '@/components/common/CurrencyInput.vue';
+import { computed, getCurrentInstance, reactive, toRefs, watch } from "vue";
 import VueDatePicker from '@vuepic/vue-datepicker';
 import { sanPhamModel } from "@/models/sanPhamModel";
 import Treeselect from 'vue3-treeselect';
@@ -146,7 +143,6 @@ const state = reactive({
   theModal: null,
   isView: false,
   list: [],
-  listLoai: [],
   filterMinPrice: null,
   filterMaxPrice: null
 });
@@ -163,19 +159,11 @@ const {
   theModal,
   isView,
   list,
-  listLoai,
   filterMinPrice,
   filterMaxPrice
 } = toRefs(state);
 function formatCurrency(value) {
   return value ? value.toLocaleString("vi-VN") + "đ" : "0đ";
-}
-async function getListLoai() {
-  await proxy.$store.dispatch("loaiStore/getAllCustomer").then(res => {
-    if (res != null && res.code === 0) {
-      state.listLoai = res.data || [];
-    }
-  });
 }
 async function getData() {
   let params = {
@@ -188,9 +176,10 @@ async function getData() {
   };
   await proxy.$store.dispatch("sanPhamStore/getPagingParamsById", params).then(res => {
     if (res != null && res.code === 0) {
-      state.list = res.data.data;
-      state.totalRows = res.data.totalRows;
-      state.numberOfElement = res.data.data.length;
+      const items = res.data?.data || [];
+      state.list = items;
+      state.totalRows = res.data?.totalRows || 0;
+      state.numberOfElement = items.length;
       // this.list = this.list.map(user => {
       //   return {
       //     ...user,
@@ -248,9 +237,6 @@ watch(() => proxy.$route.params.id, newId => {
 }, {
   immediate: true
 });
-onMounted(() => {});
-getListLoai();
 // this.getData();
 </script>
-
 

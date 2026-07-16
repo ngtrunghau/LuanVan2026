@@ -10,7 +10,7 @@
                 <div class="footer-logo">
                   <img src="@/assets/img/caulong/logo/logoNTH_removeBackground.png" alt="logo" />
                 </div>
-                <div class="footer-about-content" v-if ="this.listFooter">
+                <div class="footer-about-content">
                   <p style="text-align: center; padding-bottom: 5px; font-size: 14px">
                     ShopNTH - Hệ Thống Shop Cầu Lông
                   </p>
@@ -33,10 +33,6 @@
                   <div class="title-footer">
                    <i class="fa fa-solid fa-phone me-1" style="color: #BE8B43"></i>
                     Hotline: 0123 456 789
-                  </div>
-                  <div class="title-footer">
-                   <i class="fa fa-solid fa-phone me-1" style="color: #BE8B43"></i>
-                    Hợp tác kinh doanh: 0123 456 789 (Trung Hậu)
                   </div>
                 </div>
               </div>

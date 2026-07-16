@@ -42,7 +42,7 @@
                           <div>
                             Hiển thị
                             <label class="d-inline-flex align-items-center" style="color: #F5E7B2;">
-                              {{ this.list.length }}
+                              {{ list.length }}
                             </label>
                             trên tổng số <span style="color: red; font-weight: bold;">{{ totalRows }}</span> dòng
                           </div>
@@ -420,7 +420,13 @@ const {
   listKH,
   itemsDiaChi
 } = toRefs(state);
-const schema = Yup.object().shape({});
+const schema = Yup.object().shape({
+  customer: Yup.object().nullable().required("Khách hàng không được bỏ trống !"),
+  address: Yup.string().trim().required("Địa chỉ không được bỏ trống !"),
+  province: Yup.object().nullable().required("Tỉnh không được bỏ trống !"),
+  district: Yup.object().nullable().required("Quận/Huyện không được bỏ trống !"),
+  town: Yup.object().nullable().required("Phường/Xã không được bỏ trống !")
+});
 async function getListTinh() {
   await proxy.$store.dispatch("tinhStore/getAll").then(res => {
     if (res != null && res.code === 0) {
@@ -455,9 +461,10 @@ async function getData() {
   };
   await proxy.$store.dispatch("diaChiStore/getPagingParams", params).then(async res => {
     if (res != null && res.code === 0) {
-      state.list = res.data.data;
-      state.totalRows = res.data.totalRows;
-      state.numberOfElement = res.data.data.length;
+      const items = res.data?.data || [];
+      state.list = items;
+      state.totalRows = res.data?.totalRows || 0;
+      state.numberOfElement = items.length;
       for (let user of state.list) {
         // Lấy danh sách huyện theo tỉnh
         await getListTP(user.provinceId);

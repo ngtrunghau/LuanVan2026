@@ -11,8 +11,8 @@
               <div class="card-header">
                 <h3 class="card-title">Danh sách loại</h3>
                 <div class="top-nav-search">
-                  <form>
-                    <input type="text" class="form-control" placeholder="Nhập nội dung..." />
+                  <form @submit.prevent="handleSearch">
+                    <input v-model.trim="searchText" type="text" class="form-control" placeholder="Tìm theo tên loại..." />
                     <b-button class="btn" type="submit"><i class="fa fa-search"></i></b-button>
                   </form>
                 </div>
@@ -42,7 +42,7 @@
                           <div>
                             Hiển thị
                             <label class="d-inline-flex align-items-center" style="color: #F5E7B2;">
-                              {{ this.list.length }}
+                              {{ list.length }}
                             </label>
                             trên tổng số <span style="color: red; font-weight: bold;">{{ totalRows }}</span> dòng
                           </div>
@@ -67,7 +67,7 @@
                         </th>
                         </thead>
                         <tbody>
-                        <tr v-for="(item, index) in this.list" :key="index">
+                        <tr v-for="(item, index) in list" :key="index">
                           <td style="text-align: center">
                             {{ index + ((currentPage-1)*perPage) + 1}}
                           </td>
@@ -285,6 +285,7 @@ const state = reactive({
   theModal: null,
   isView: false,
   list: []
+  ,searchText: ""
 });
 const {
   title,
@@ -299,25 +300,37 @@ const {
   theModal,
   isView,
   list
+  ,searchText
 } = toRefs(state);
 const schema = Yup.object().shape({
-  name: Yup.string().required("Tên loại không được bỏ trống !")
+  name: Yup.string().trim().required("Tên loại không được bỏ trống !"),
+  sort: Yup.number()
+    .typeError("Thứ tự sắp xếp không hợp lệ !")
+    .integer("Thứ tự sắp xếp phải là số nguyên !")
+    .min(0, "Thứ tự sắp xếp không được nhỏ hơn 0 !")
+    .required("Thứ tự sắp xếp không được bỏ trống !")
 });
 async function getData() {
   let params = {
     start: state.currentPage,
     limit: state.perPage,
-    sortBy: state.sortBy
+    sortBy: state.sortBy,
+    content: state.searchText || null
   };
   await proxy.$store.dispatch("loaiStore/getPagingParams", params).then(res => {
     if (res != null && res.code === 0) {
-      state.list = res.data.data;
-      state.totalRows = res.data.totalRows;
-      state.numberOfElement = res.data.data.length;
+      const items = res.data?.data || [];
+      state.list = items;
+      state.totalRows = res.data?.totalRows || 0;
+      state.numberOfElement = items.length;
       console.log("DATA", state.list);
     }
     proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
   });
+}
+function handleSearch() {
+  state.currentPage = 1;
+  getData();
 }
 async function handleGetInfo(id) {
   await proxy.$store.dispatch("loaiStore/getById", {

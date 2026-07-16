@@ -280,7 +280,7 @@ const reportsMenu = computed(() => {
   return proxy.$route.name == "admin/invoice-report" || proxy.$route.name == "admin/invoice";
 });
 const authenticationMenu = computed(() => {
-  return proxy.$route.name == "admin/forgot-password" || proxy.$route.name == "admin/lock-screen" || proxy.$route.name == "admin/login" || proxy.$route.name == "admin/register";
+  return false;
 });
 const errorMenu = computed(() => {
   return proxy.$route.name == "admin/error-404" || proxy.$route.name == "admin/error-500";

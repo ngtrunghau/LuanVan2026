@@ -176,27 +176,51 @@
                   <div class="invalid-feedback">{{ errors.discountType }}</div>
                 </div>
                 <div class="col-md-6">
-                  <label class="form-label">Giá trị giảm <span class="text-danger">*</span></label>
-                  <Field
-                    v-model.number="form.discountValue"
-                    name="discountValue"
-                    type="number"
-                    min="1"
-                    class="form-control"
-                    :class="{ 'is-invalid': errors.discountValue }"
-                  />
-                  <div class="invalid-feedback">{{ errors.discountValue }}</div>
+                  <label class="form-label">
+                    {{ form.discountType === 'percent' ? 'Phần trăm giảm' : 'Số tiền giảm' }}
+                    <span class="text-danger">*</span>
+                  </label>
+                  <div v-if="form.discountType === 'percent'" class="input-group">
+                    <Field
+                      v-model.number="form.discountValue"
+                      name="discountValue"
+                      type="number"
+                      min="1"
+                      max="100"
+                      placeholder="VD: 10"
+                      class="form-control"
+                      :class="{ 'is-invalid': errors.discountValue }"
+                    />
+                    <span class="input-group-text">%</span>
+                  </div>
+                  <Field v-else name="discountValue" v-slot="{ field }">
+                    <CurrencyInput
+                      v-model="form.discountValue"
+                      placeholder="VD: 100.000"
+                      class="form-control"
+                      :class="{ 'is-invalid': errors.discountValue }"
+                      @update:model-value="field.onChange"
+                      @blur="field.onBlur"
+                    />
+                  </Field>
+                  <div v-if="errors.discountValue" class="text-danger small mt-1">
+                    {{ errors.discountValue }}
+                  </div>
+                  <div v-else-if="form.discountType === 'percent'" class="form-text">
+                    Ví dụ: nhập 10 để giảm 10% giá trị đơn hàng.
+                  </div>
                 </div>
                 <div class="col-md-6">
                   <label class="form-label">Giá trị đơn tối thiểu</label>
-                  <Field
-                    v-model.number="form.minOrderValue"
-                    name="minOrderValue"
-                    type="number"
-                    min="0"
-                    class="form-control"
-                    :class="{ 'is-invalid': errors.minOrderValue }"
-                  />
+                  <Field name="minOrderValue" v-slot="{ field }">
+                    <CurrencyInput
+                      v-model="form.minOrderValue"
+                      class="form-control"
+                      :class="{ 'is-invalid': errors.minOrderValue }"
+                      @update:model-value="field.onChange"
+                      @blur="field.onBlur"
+                    />
+                  </Field>
                   <div class="invalid-feedback">{{ errors.minOrderValue }}</div>
                 </div>
                 <div class="col-md-6">
@@ -261,6 +285,7 @@
 </template>
 
 <script setup>
+import CurrencyInput from '@/components/common/CurrencyInput.vue';
 import { getCurrentInstance, onMounted, reactive, ref, watch } from "vue";
 import { Field, Form } from "vee-validate";
 import * as Yup from "yup";
@@ -298,12 +323,12 @@ const schema = Yup.object({
   descriptions: Yup.string().trim().required("Vui lòng nhập mô tả."),
   discountType: Yup.string().oneOf(["percent", "fixed"]).required(),
   discountValue: Yup.number()
-    .typeError("Giá trị giảm không hợp lệ.")
-    .positive("Giá trị giảm phải lớn hơn 0.")
+    .typeError("Mức giảm không hợp lệ.")
+    .positive("Mức giảm phải lớn hơn 0.")
     .test("percent-limit", "Mức giảm không được vượt quá 100%.", function (value) {
       return this.parent.discountType !== "percent" || !value || value <= 100;
     })
-    .required("Vui lòng nhập giá trị giảm."),
+    .required("Vui lòng nhập mức giảm."),
   minOrderValue: Yup.number().typeError("Giá trị không hợp lệ.").min(0),
   maxUsage: Yup.number()
     .nullable()

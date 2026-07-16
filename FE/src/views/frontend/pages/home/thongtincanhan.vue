@@ -145,7 +145,12 @@ const {
   format,
   locale
 } = toRefs(state);
-const schema = Yup.object().shape({});
+const schema = Yup.object().shape({
+  fullName: Yup.string().trim().required("Họ và tên không được bỏ trống !"),
+  email: Yup.string().trim().email("Email không đúng định dạng !").required("Email không được bỏ trống !"),
+  phone: Yup.string().trim().required("Số điện thoại không được bỏ trống !"),
+  userName: Yup.string().trim().required("Tài khoản không được bỏ trống !")
+});
 function getAuthHeaders() {
   const token = localStorage.getItem("token");
   return token ? {

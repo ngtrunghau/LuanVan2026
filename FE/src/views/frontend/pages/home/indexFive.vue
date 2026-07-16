@@ -19,8 +19,6 @@
 
     <headerHome></headerHome>
 
-    <indexfiveservice></indexfiveservice>
-    
     <footerHome></footerHome>
 
     <cursor />

@@ -134,12 +134,14 @@
               rows="4"
               maxlength="500"
               class="form-control"
+              :class="{ 'is-invalid': hideReasonError }"
               placeholder="Ví dụ: ngôn từ xúc phạm, quảng cáo, nội dung không liên quan..."
             ></textarea>
+            <div v-if="hideReasonError" class="invalid-feedback">{{ hideReasonError }}</div>
           </div>
           <div class="modal-footer">
             <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Đóng</button>
-            <button class="btn btn-danger" :disabled="!hideReason || processingId" @click="confirmHide">
+            <button class="btn btn-danger" :disabled="processingId" @click="confirmHide">
               Xác nhận ẩn
             </button>
           </div>
@@ -164,6 +166,7 @@ const status = ref(0);
 const keyword = ref("");
 const selectedReview = ref(null);
 const hideReason = ref("");
+const hideReasonError = ref("");
 const hideModalElement = ref(null);
 let hideModal = null;
 
@@ -199,11 +202,17 @@ async function approve(item) {
 function openHide(item) {
   selectedReview.value = item;
   hideReason.value = item.moderationReason || "";
+  hideReasonError.value = "";
   hideModal?.show();
 }
 
 async function confirmHide() {
-  if (!selectedReview.value || !hideReason.value) return;
+  if (!selectedReview.value) return;
+  if (!hideReason.value) {
+    hideReasonError.value = "Lý do ẩn không được bỏ trống.";
+    return;
+  }
+  hideReasonError.value = "";
   const success = await moderate(selectedReview.value.id, 2, hideReason.value);
   if (success) hideModal?.hide();
 }

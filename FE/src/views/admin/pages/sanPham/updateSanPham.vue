@@ -41,12 +41,14 @@
                         <div class="mb-2">
                             <label for="formFileSm" class="text-left mb-0">Hình ảnh</label>
                             <span style="color: red">&nbsp;*</span>
-                            <Field 
-                                id="formFileSm" name="fileImage"
-                                ref="fileInput" type="file" class="form-control"
-                                @change="upload($event)"
+                            <Field name="imageUrl" v-slot="{ field }">
+                              <input
+                                id="formFileSm" ref="fileInput" type="file" class="form-control"
+                                accept="image/png,image/jpeg,image/jpg"
+                                @change="upload($event, field)"
                                 :class="{ 'is-invalid': errors.imageUrl }" 
-                            />
+                              />
+                            </Field>
                             <template v-if="model.imageUrl">
                             <div class="img-model">
                                 <img :src="model.imageUrl" alt="">
@@ -61,12 +63,13 @@
                         <label class="text-left">Loại</label>
                         <span style="color: red">&nbsp;*</span>
                         <Field
-                            name="unitRole"
+                            name="categories"
                             v-slot="{ field}"
                         >
                             <VueMultiselect
                                 v-bind="field"
-                                v-model="model.categories"
+                                :model-value="model.categories"
+                                @update:model-value="value => handleCategoryChange(value, field)"
                                 :options="listLoai"
                                 label="name"
                                 placeholder="Nhấp vào để chọn"
@@ -101,14 +104,16 @@
                         <div class="mb-3">
                         <label class="text-left">Giá</label>
                         <span style="color: red">&nbsp;*</span>
-                        <Field
-                            v-model="model.price"
-                            placeholder="Vui lòng nhập giá"
-                            name="price"
-                            type="text"
-                            class="form-control"
-                            :class="{ 'is-invalid': errors.price }"
-                        />
+                        <Field name="price" v-slot="{ field }">
+                          <CurrencyInput
+                              v-model="model.price"
+                              placeholder="Vui lòng nhập giá"
+                              class="form-control"
+                              :class="{ 'is-invalid': errors.price }"
+                              @update:model-value="field.onChange"
+                              @blur="field.onBlur"
+                          />
+                        </Field>
                         <div class="invalid-feedback">{{ errors.price }}</div>
                         </div>
                     </div>
@@ -120,6 +125,7 @@
                             <CKEditorCustom
                             v-bind="field"
                             v-model="model.descriptions"
+                            @update:model-value="field.onChange"
                             :class="{ 'is-invalid': errors.descriptions }"
                             >
                             </CKEditorCustom>
@@ -138,7 +144,7 @@
     </div>
   </template>
   <script setup>
-import { getCurrentInstance, reactive, toRefs, watch } from "vue";
+import { getCurrentInstance, onMounted, reactive, ref, toRefs } from "vue";
 import VueMultiselect from 'vue-multiselect';
 import Loading from "vue3-loading-overlay";
 import Paginate from "vuejs-paginate-next";
@@ -152,12 +158,14 @@ import { notifyModel } from "@/models/notifyModel";
 import CKEditorCustom from "@/utils/view/CKEditorCustom.vue";
 import { Form, Field } from "vee-validate";
 import * as Yup from "yup";
+import CurrencyInput from "@/components/common/CurrencyInput.vue";
 defineOptions({
   name: "admin/page"
 });
 const {
   proxy
 } = getCurrentInstance();
+const form = ref(null);
 const state = reactive({
   title: "CHI TIẾT SẢN PHẨM",
   treeView: [],
@@ -197,7 +205,19 @@ const {
   listLoai
 } = toRefs(state);
 const schema = Yup.object().shape({
-  name: Yup.string().required("Tên sản phẩm không được bỏ trống !")
+  name: Yup.string().trim().required("Tên sản phẩm không được bỏ trống !"),
+  imageUrl: Yup.string().required("Hình ảnh không được bỏ trống !"),
+  categories: Yup.object().nullable().required("Loại sản phẩm không được bỏ trống !"),
+  color: Yup.string().trim().required("Màu sắc không được bỏ trống !"),
+  price: Yup.number()
+    .typeError("Giá sản phẩm không hợp lệ !")
+    .positive("Giá sản phẩm phải lớn hơn 0 !")
+    .required("Giá sản phẩm không được bỏ trống !"),
+  descriptions: Yup.string().test(
+    "required-html",
+    "Nội dung bài viết không được bỏ trống !",
+    value => Boolean(value?.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim())
+  )
 });
 function getAuthHeaders() {
   const token = localStorage.getItem("token");
@@ -206,11 +226,14 @@ function getAuthHeaders() {
   } : {};
 }
 async function getListLoai() {
-  await proxy.$store.dispatch("loaiStore/getAll").then(res => {
-    if (res != null && res.code === 0) {
-      state.listLoai = res.data || [];
-    }
-  });
+  const res = await proxy.$store.dispatch("loaiStore/getAll");
+  if (res != null && res.code === 0) {
+    state.listLoai = res.data || [];
+  }
+}
+function handleCategoryChange(value, field) {
+  state.model.categories = value;
+  field.onChange(value);
 }
 async function handleSubmit() {
   state.model.categoriesId = state.model.categories.id;
@@ -226,23 +249,30 @@ async function handleInfo() {
   const params = {
     id: proxy.$route.params.id
   };
-  await proxy.$store.dispatch("sanPhamStore/getById", params).then(res => {
-    //  console.log("ID: ", res);
-    if (res.code === 0) {
-      console.log(res);
-      state.model = sanPhamModel.getJson(res.data);
-      console.log("Danh sách loại sản phẩm:", state.listLoai);
-      console.log("ID danh mục cần tìm:", res.data.categoriesId);
-      state.model.categories = state.listLoai.find(cat => cat.id === res.data.categoriesId) || null;
-      console.log("LIST SAN PHAM: ", state.model);
-      // this.$refs.form.setFieldValue('fileImage', res.data.fileImage || null);
-    } else {
-      proxy.$store.dispatch("snackBarStore/addNotify", {
-        message: res.message,
-        code: res.code
-      });
-    }
-  });
+  const res = await proxy.$store.dispatch("sanPhamStore/getById", params);
+  if (res.code === 0) {
+    state.model = sanPhamModel.getJson(res.data);
+    state.model.categories = state.listLoai.find(
+      category => String(category.id) === String(res.data.categoriesId)
+    ) || null;
+
+    // Đồng bộ dữ liệu API vào trạng thái nội bộ của vee-validate.
+    form.value?.resetForm({
+      values: {
+        name: state.model.name,
+        imageUrl: state.model.imageUrl,
+        categories: state.model.categories,
+        color: state.model.color,
+        price: state.model.price,
+        descriptions: state.model.descriptions
+      }
+    });
+  } else {
+    proxy.$store.dispatch("snackBarStore/addNotify", {
+      message: res.message,
+      code: res.code
+    });
+  }
 }
 function getColorWithExtFile(ext) {
   if (ext == '.png' || ext == '.jpg' || ext == '.jpeg') return 'text-danger';
@@ -264,7 +294,7 @@ function deleteImage() {
     });
   }
 }
-async function upload() {
+async function upload(event, field) {
   if (event.target && event.target.files.length > 0) {
     const formData = new FormData();
     // formData.append('code', "ICON")
@@ -275,6 +305,7 @@ async function upload() {
       let resultData = response.data;
       if (response.data.code == 0) {
         state.model.imageUrl = resultData.data;
+        field.onChange(resultData.data);
         console.log("LOG UPDATE : ", resultData.data);
       }
     });
@@ -294,8 +325,10 @@ function normalizer(node) {
     delete node.children;
   }
 }
-getListLoai();
-handleInfo();
+onMounted(async () => {
+  await getListLoai();
+  await handleInfo();
+});
 </script>
 
 <style>

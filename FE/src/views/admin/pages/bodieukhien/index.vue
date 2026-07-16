@@ -11,8 +11,8 @@
               <div class="card-header">
                 <h3 class="card-title">Danh sách bộ điều khiển</h3>
                 <div class="top-nav-search">
-                  <form>
-                    <input type="text" class="form-control" placeholder="Nhập nội dung..." />
+                  <form @submit.prevent="handleSearch">
+                    <input v-model.trim="searchText" type="text" class="form-control" placeholder="Tìm theo tên bộ điều khiển..." />
                     <b-button class="btn" type="submit"><i class="fa fa-search"></i></b-button>
                   </form>
                 </div>
@@ -42,7 +42,7 @@
                           <div>
                             Hiển thị
                             <label class="d-inline-flex align-items-center" style="color: #F5E7B2;">
-                              {{ this.list.length }}
+                              {{ list.length }}
                             </label>
                             trên tổng số <span style="color: red; font-weight: bold;">{{ totalRows }}</span> dòng
                           </div>
@@ -265,6 +265,7 @@ const state = reactive({
   theModal: null,
   isView: false,
   list: []
+  ,searchText: ""
 });
 const {
   title,
@@ -279,6 +280,7 @@ const {
   theModal,
   isView,
   list
+  ,searchText
 } = toRefs(state);
 const schema = Yup.object().shape({
   name: Yup.string().required("Tên không được bỏ trống !")
@@ -287,16 +289,22 @@ async function getData() {
   let params = {
     start: state.currentPage,
     limit: state.perPage,
-    sortBy: state.sortBy
+    sortBy: state.sortBy,
+    content: state.searchText || null
   };
   await proxy.$store.dispatch("boDieuKhienStore/getPagingParams", params).then(res => {
     if (res != null && res.code === 0) {
-      state.list = res.data.data;
-      state.totalRows = res.data.totalRows;
-      state.numberOfElement = res.data.data.length;
+      const items = res.data?.data || [];
+      state.list = items;
+      state.totalRows = res.data?.totalRows || 0;
+      state.numberOfElement = items.length;
     }
     proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
   });
+}
+function handleSearch() {
+  state.currentPage = 1;
+  getData();
 }
 async function handleGetInfo(id) {
   await proxy.$store.dispatch("boDieuKhienStore/getById", {

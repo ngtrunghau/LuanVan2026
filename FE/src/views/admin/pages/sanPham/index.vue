@@ -11,8 +11,8 @@
               <div class="card-header">
                 <h3 class="card-title">Danh sách sản phẩm</h3>
                 <div class="top-nav-search">
-                  <form>
-                    <input type="text" class="form-control" placeholder="Nhập nội dung..." />
+                  <form @submit.prevent="handleSearch">
+                    <input v-model.trim="searchText" type="text" class="form-control" placeholder="Tìm theo tên sản phẩm..." />
                     <b-button class="btn" type="submit"><i class="fa fa-search"></i></b-button>
                   </form>
                 </div>
@@ -46,7 +46,7 @@
                           <div>
                             Hiển thị
                             <label class="d-inline-flex align-items-center" style="color: #F5E7B2;">
-                              {{ this.list.length }}
+                              {{ list.length }}
                             </label>
                             trên tổng số <span style="color: red; font-weight: bold;">{{ totalRows }}</span> dòng
                           </div>
@@ -99,7 +99,7 @@
                             {{ item.stockQuantity }}
                           </td>
                           <td style="text-align: left">
-                            {{ item.price }}
+                            {{ formatVnd(item.price) }}
                           </td>
                           <td style="text-align: center">
                             <router-link
@@ -209,6 +209,7 @@
   </div>
 </template>
 <script setup>
+import { formatVnd } from '@/utils/currency';
 import { getCurrentInstance, onMounted, reactive, toRefs, watch } from "vue";
 import VueDatePicker from '@vuepic/vue-datepicker';
 import { sanPhamModel } from "@/models/sanPhamModel";
@@ -239,6 +240,7 @@ const state = reactive({
   isView: false,
   list: [],
   listLoai: []
+  ,searchText: ""
 });
 const {
   title,
@@ -254,6 +256,7 @@ const {
   isView,
   list,
   listLoai
+  ,searchText
 } = toRefs(state);
 async function getListLoai() {
   await proxy.$store.dispatch("loaiStore/getAll").then(res => {
@@ -266,23 +269,29 @@ async function getData() {
   let params = {
     start: state.currentPage,
     limit: state.perPage,
-    sortBy: state.sortBy
+    sortBy: state.sortBy,
+    content: state.searchText || null
   };
   await proxy.$store.dispatch("sanPhamStore/getPagingParams", params).then(res => {
     if (res != null && res.code === 0) {
-      state.list = res.data.data;
-      state.totalRows = res.data.totalRows;
-      state.numberOfElement = res.data.data.length;
+      const products = res.data?.data || [];
+      state.list = products;
+      state.totalRows = res.data?.totalRows || 0;
+      state.numberOfElement = products.length;
       state.list = state.list.map(user => {
         return {
           ...user,
-          categories: state.list.find(role => role.id === user.categoriesId) || null
+          categories: state.listLoai.find(role => role.id === user.categoriesId) || null
         };
       });
       console.log("LIST SAN PHAM: ", state.list);
     }
     proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));
   });
+}
+function handleSearch() {
+  state.currentPage = 1;
+  getData();
 }
 function handleShowDeleteModal(id) {
   state.model.id = id;

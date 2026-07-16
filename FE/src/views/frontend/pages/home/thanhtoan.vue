@@ -68,25 +68,14 @@
 
               <div class="payment-method mt-4">
                 <h6>Phương thức thanh toán</h6>
-                <div class="mb-2">
-                  <label class="d-flex align-items-center">
-                    <input
-                      type="radio"
-                      class="me-2"
-                      value="bank"
-                      v-model="form.paymentMethod"
-                    />
-                    <i class="fas fa-university"></i>
-                    <strong class="ms-2">Chuyển khoản ngân hàng</strong>
-                  </label>
-                </div>
                 <div>
                   <label class="d-flex align-items-center">
                     <input
                       type="radio"
                       class="me-2"
                       value="cod"
-                      v-model="form.paymentMethod"
+                      checked
+                      disabled
                     />
                     <i class="fas fa-truck"></i>
                     <strong class="ms-2">Thanh toán khi nhận hàng</strong>
@@ -177,7 +166,11 @@
               <router-link to="/gio-hang" class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-left"></i> Quay về giỏ hàng
               </router-link>
-              <b-button @click="submitOrder" variant="primary">
+              <b-button
+                @click="submitOrder"
+                variant="primary"
+                :disabled="cartItems.length === 0"
+              >
                 <i class="fas fa-shopping-bag"></i> ĐẶT HÀNG
               </b-button>
             </div>
@@ -282,8 +275,7 @@ const state = reactive({
     district: null,
     ward: null,
     address: '',
-    note: '',
-    paymentMethod: 'bank'
+    note: ''
   },
   showAddressModal: false,
   listTinh: [],
@@ -357,6 +349,14 @@ function loadCartItems() {
   }
   state.cartItems = cartData;
   console.log("DATA: ", state.cartItems);
+
+  if (state.cartItems.length === 0) {
+    proxy.$store.dispatch("snackBarStore/addNotify", {
+      message: 'Giỏ hàng đang trống. Vui lòng thêm sản phẩm trước khi đặt hàng.',
+      variant: 'danger'
+    });
+    proxy.$router.replace('/gio-hang');
+  }
 }
 async function loadUserAddresses() {
   const authUser = JSON.parse(localStorage.getItem('auth-user'));
@@ -490,6 +490,15 @@ async function submitOrder() {
   try {
     const authUser = JSON.parse(localStorage.getItem('auth-user'));
 
+    if (state.cartItems.length === 0) {
+      proxy.$store.dispatch("snackBarStore/addNotify", {
+        message: 'Giỏ hàng đang trống. Vui lòng thêm sản phẩm trước khi đặt hàng.',
+        variant: 'danger'
+      });
+      proxy.$router.replace('/gio-hang');
+      return;
+    }
+
     // Kiểm tra xem đã chọn địa chỉ chưa
     if (!state.selectedAddress) {
       proxy.$store.dispatch("snackBarStore/addNotify", {
@@ -510,7 +519,7 @@ async function submitOrder() {
         quantity: item.quantity,
         imageUrl: item.imageUrl
       })),
-      paymentMethod: state.form.paymentMethod,
+      paymentMethod: 'cod',
       promotionCode: state.discountAmount > 0 ? state.promotionCode : null
     };
 
@@ -521,7 +530,7 @@ async function submitOrder() {
         path: '/thanh-toan-thanh-cong',
         query: {
           orderId: res.data?.orderId || '',
-          paymentMethod: state.form.paymentMethod
+          paymentMethod: 'cod'
         }
       });
 
@@ -546,6 +555,8 @@ const subTotal = computed(() => {
   return state.cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
 });
 const totalAmount = computed(() => {
+  if (state.cartItems.length === 0) return 0;
+
   return Math.max(0, subTotal.value - state.discountAmount) + state.shippingFee;
 });
 const addressOptions = computed(() => {

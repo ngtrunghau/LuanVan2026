@@ -82,11 +82,13 @@
         <router-link to="/san-pham" class="btn btn-outline-danger">
           <i class="fa fa-solid fa-basket-shopping"></i> Tiếp tục mua hàng
         </router-link>
-        <router-link to="/thanh-toan" >
-          <button class="btn btn-danger" @click="checkout">
-            <i class="fa fa-solid fa-cart-shopping"></i> Tiến hành đặt hàng
-          </button>
-        </router-link>
+        <button
+          class="btn btn-danger"
+          :disabled="isCartEmpty"
+          @click="checkout"
+        >
+          <i class="fa fa-solid fa-cart-shopping"></i> Tiến hành đặt hàng
+        </button>
         
       </div>
     </div>
@@ -138,7 +140,15 @@ function updateCart(cartData) {
   window.dispatchEvent(new CustomEvent("cart-updated"));
 }
 function checkout() {
-  proxy.$router.push('/checkout');
+  if (isCartEmpty.value) {
+    proxy.$store.dispatch("snackBarStore/addNotify", {
+      message: 'Giỏ hàng đang trống. Vui lòng thêm sản phẩm trước khi đặt hàng.',
+      variant: 'danger'
+    });
+    return;
+  }
+
+  proxy.$router.push('/thanh-toan');
 }
 function loadCart() {
   // Kiểm tra người dùng đăng nhập
@@ -159,6 +169,7 @@ function handleImageError(e) {
 const totalPrice = computed(() => {
   return state.cart.reduce((total, item) => total + item.price * item.quantity, 0);
 });
+const isCartEmpty = computed(() => state.cart.length === 0);
 onMounted(() => {
   loadCart();
   window.addEventListener('cart-updated', loadCart);

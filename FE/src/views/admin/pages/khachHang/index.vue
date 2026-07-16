@@ -42,7 +42,7 @@
                           <div>
                             Hiển thị
                             <label class="d-inline-flex align-items-center" style="color: #F5E7B2;">
-                              {{ this.list.length }}
+                              {{ list.length }}
                             </label>
                             trên tổng số <span style="color: red; font-weight: bold;">{{ totalRows }}</span> dòng
                           </div>
@@ -368,7 +368,11 @@ const {
   list
 } = toRefs(state);
 const schema = Yup.object().shape({
-  fullName: Yup.string().required("Tên khách hàng không được bỏ trống !")
+  fullName: Yup.string().trim().required("Tên khách hàng không được bỏ trống !"),
+  phone: Yup.string().trim().required("Số điện thoại không được bỏ trống !"),
+  email: Yup.string().trim().email("Email không đúng định dạng !").required("Email không được bỏ trống !"),
+  userName: Yup.string().trim().required("Tài khoản không được bỏ trống !"),
+  password: Yup.string().required("Mật khẩu không được bỏ trống !")
 });
 async function getData() {
   let params = {
@@ -378,9 +382,10 @@ async function getData() {
   };
   await proxy.$store.dispatch("khachHangStore/getPagingParams", params).then(res => {
     if (res != null && res.code === 0) {
-      state.list = res.data.data;
-      state.totalRows = res.data.totalRows;
-      state.numberOfElement = res.data.data.length;
+      const items = res.data?.data || [];
+      state.list = items;
+      state.totalRows = res.data?.totalRows || 0;
+      state.numberOfElement = items.length;
       console.log("LIST KHÁCH HÀNG: ", state.list);
     }
     proxy.$store.dispatch("snackBarStore/addNotify", notifyModel.addMessage(res));

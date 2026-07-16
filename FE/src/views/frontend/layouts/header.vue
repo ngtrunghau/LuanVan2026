@@ -17,12 +17,12 @@
             </router-link>
 
             <div style="display: flex">
-              <div class="top-nav-search me-2">
+              <!-- <div class="top-nav-search me-2">
                 <form>
                   <input type="text" class="form-control" placeholder="Nhập thông tin tìm kiếm..." />
                   <b-button class="btn" type="submit"><i class="fa fa-search"></i></b-button>
                 </form>
-              </div>
+              </div> -->
               <div class="top-nav-button d-flex">
                 <!-- Cart -->
                 <li
@@ -319,7 +319,7 @@ function closeSidebar() {
   document.documentElement.classList.remove("menu-opened");
 }
 const isHomeOneRoute = computed(() => {
-  return proxy.$route.path === "/" || proxy.$route.path.includes("/san-pham-chi-tiet/") || proxy.$route.path === "/san-pham-vot" || proxy.$route.path.includes("/san-pham/") || proxy.$route.path === "/gio-hang" || proxy.$route.path === "/dang-ky" || proxy.$route.path === "/don-hang" || proxy.$route.path === "/thong-tin-ca-nhan" || proxy.$route.path.includes("/don-hang/chi-tiet/") || proxy.$route.path === "/login";
+  return proxy.$route.path === "/" || proxy.$route.path.includes("/san-pham-chi-tiet/") || proxy.$route.path.includes("/san-pham/") || proxy.$route.path === "/gio-hang" || proxy.$route.path === "/dang-ky" || proxy.$route.path === "/don-hang" || proxy.$route.path === "/thong-tin-ca-nhan" || proxy.$route.path.includes("/don-hang/chi-tiet/") || proxy.$route.path === "/login";
 });
 onMounted(() => {
   window.addEventListener("scroll", handleScroll);

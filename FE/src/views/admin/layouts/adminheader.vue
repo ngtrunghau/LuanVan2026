@@ -113,9 +113,9 @@
                 class="avatar-img rounded-circle"
               />
             </div>
-            <div class="user-text" v-if="this.model">
-              <h6>{{ this.model.userName}}</h6>
-              <p class="text-muted mb-0">{{ this.model.role}}</p>
+            <div class="user-text" v-if="model">
+              <h6>{{ model.userName}}</h6>
+              <p class="text-muted mb-0">{{ model.role}}</p>
             </div>
           </div>
           <!-- <router-link class="dropdown-item" to="/quan-tri/profile"

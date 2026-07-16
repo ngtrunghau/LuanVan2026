@@ -10,9 +10,9 @@
               <div class="card-body product-description">
                 <div class="doctor-widget">
                   <div class="doc-info-left">
-                    <div class="doctor-img1" v-if="this.model.imageUrl">
+                    <div class="doctor-img1" v-if="model.imageUrl">
                       <img
-                        :src="this.model.imageUrl"
+                        :src="model.imageUrl"
                         class="img-fluid"
                         alt="User Image"
                       />
@@ -25,7 +25,7 @@
                       />
                     </div>
                     <div class="doc-info-cont">
-                      <h4 class="doc-name mb-2">{{ this.model.name }}</h4>
+                      <h4 class="doc-name mb-2">{{ model.name }}</h4>
                       <!-- <p>
                         Thương hiệu: VNB
                       </p>
@@ -66,12 +66,12 @@
                 </div>
               </div>
             </div>
-            <SanPhamDetail :detail="this.model"></SanPhamDetail>
+            <SanPhamDetail :detail="model"></SanPhamDetail>
           </div>
           <div class="col-md-5 col-lg-3 col-xl-3 theiaStickySidebar">
             <!-- Right Details -->
             <div class="stickysidebar">
-              <SanPhamSidebar :sidebar="this.model"></SanPhamSidebar>
+              <SanPhamSidebar :sidebar="model"></SanPhamSidebar>
             </div>
             <!-- /Right Details -->
           </div>

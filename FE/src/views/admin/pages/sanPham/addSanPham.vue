@@ -16,7 +16,7 @@
                   <div class="row">
                     <div class="col-md-6">
                       <div class="cs-title-box">
-                        <span class="font-size-13">THÔNG TIN BÀI VIẾT</span>
+                        <span class="font-size-13">THÔNG TIN SẢN PHẨM</span>
                       </div>
                     </div>
                     <div class="tt-end mext-2 col-md-6" style="display: flex; justify-content: flex-end;">
@@ -24,7 +24,7 @@
                           type="submit"
                           style="background-color: #e9ab2e; border: none;"
                       >
-                        Đăng bài viết
+                        Đăng sản phẩm
                       </b-button>
                     </div>
                     <div class="col-12">
@@ -46,12 +46,14 @@
                         <div class="mb-2">
                             <label for="formFileSm" class="text-left mb-0">Hình ảnh</label>
                             <span style="color: red">&nbsp;*</span>
-                            <Field 
-                                id="formFileSm" name="fileImage"
-                                ref="fileInput" type="file" class="form-control"
-                                @change="upload($event)"
+                            <Field name="imageUrl" v-slot="{ field }">
+                              <input
+                                id="formFileSm" ref="fileInput" type="file" class="form-control"
+                                accept="image/png,image/jpeg,image/jpg"
+                                @change="upload($event, field)"
                                 :class="{ 'is-invalid': errors.imageUrl }" 
-                            />
+                              />
+                            </Field>
                             <template v-if="model.imageUrl">
                             <div class="img-model">
                                 <img :src="model.imageUrl" alt="">
@@ -66,7 +68,7 @@
                         <label class="text-left">Loại</label>
                         <span style="color: red">&nbsp;*</span>
                         <Field
-                            name="unitRole"
+                            name="categories"
                             v-slot="{ field}"
                         >
                             <VueMultiselect
@@ -106,14 +108,16 @@
                         <div class="mb-3">
                         <label class="text-left">Giá</label>
                         <span style="color: red">&nbsp;*</span>
-                        <Field
-                            v-model="model.price"
-                            placeholder="Vui lòng nhập giá"
-                            name="price"
-                            type="text"
-                            class="form-control"
-                            :class="{ 'is-invalid': errors.price }"
-                        />
+                        <Field name="price" v-slot="{ field }">
+                          <CurrencyInput
+                              v-model="model.price"
+                              placeholder="Vui lòng nhập giá"
+                              class="form-control"
+                              :class="{ 'is-invalid': errors.price }"
+                              @update:model-value="field.onChange"
+                              @blur="field.onBlur"
+                          />
+                        </Field>
                         <div class="invalid-feedback">{{ errors.price }}</div>
                         </div>
                     </div>
@@ -160,6 +164,7 @@ import CKEditorCustom from "@/utils/view/CKEditorCustom.vue";
 import { defineComponent, ref } from '@vue/runtime-core';
 import { Form, Field } from "vee-validate";
 import * as Yup from "yup";
+import CurrencyInput from "@/components/common/CurrencyInput.vue";
 defineOptions({
   name: "admin/page"
 });
@@ -191,7 +196,19 @@ const {
   listLoai
 } = toRefs(state);
 const schema = Yup.object().shape({
-  name: Yup.string().required("Tên không được bỏ trống !")
+  name: Yup.string().trim().required("Tên sản phẩm không được bỏ trống !"),
+  imageUrl: Yup.string().required("Hình ảnh không được bỏ trống !"),
+  categories: Yup.object().nullable().required("Loại sản phẩm không được bỏ trống !"),
+  color: Yup.string().trim().required("Màu sắc không được bỏ trống !"),
+  price: Yup.number()
+    .typeError("Giá sản phẩm không hợp lệ !")
+    .positive("Giá sản phẩm phải lớn hơn 0 !")
+    .required("Giá sản phẩm không được bỏ trống !"),
+  descriptions: Yup.string().test(
+    "required-html",
+    "Nội dung bài viết không được bỏ trống !",
+    value => Boolean(value?.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim())
+  )
 });
 function getAuthHeaders() {
   const token = localStorage.getItem("token");
@@ -250,7 +267,7 @@ function deleteImage() {
     });
   }
 }
-async function upload() {
+async function upload(event, field) {
   if (event.target && event.target.files.length > 0) {
     const formData = new FormData();
     // formData.append('code', "ICON")
@@ -261,6 +278,7 @@ async function upload() {
       let resultData = response.data;
       if (response.data.code == 0) {
         state.model.imageUrl = resultData.data;
+        field.onChange(resultData.data);
         console.log("LOG UPDATE : ", resultData.data);
       }
     });

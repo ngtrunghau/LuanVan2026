@@ -20,7 +20,7 @@
                         <div>
                           Hiển thị
                           <label class="d-inline-flex align-items-center" style="color: #F5E7B2;">
-                            {{ this.list.length }}
+                            {{ list.length }}
                           </label>
                           trên tổng số <span style="color: red; font-weight: bold;">{{ totalRows }}</span> dòng
                         </div>
@@ -50,9 +50,6 @@
                         <th class="col150 cursor td-stt" style="text-align: center;">
                           STT
                         </th>
-                        <th class="col150 cursor" style="text-align: center;">
-                          Tên
-                        </th>
                         <th class="col100 cursor" style="text-align: center;">
                           Sản phẩm
                         </th>
@@ -67,9 +64,6 @@
                         <tr v-for="(item, index) in list" :key="index">
                           <td style="text-align: center">
                             {{ index + ((currentPage-1)*perPage) + 1}}
-                          </td>
-                          <td style="text-align: left">
-                            {{ item.name }}
                           </td>
                           <td style="text-align: left">
                             {{ item.product?.name }}
@@ -133,26 +127,10 @@
                               <div class="row">
                                 <div class="col-12">
                                   <div class="mb-3">
-                                    <label class="text-left">Tên</label>
-                                    <span style="color: red">&nbsp;*</span>
-                                    <Field
-                                        v-model="model.name"
-                                        placeholder="Vui lòng nhập tên"
-                                        name="name"
-                                        type="text"
-                                        class="form-control"
-                                        :disabled = isView
-                                        :class="{ 'is-invalid': errors.name && meta.touched && !meta.valid }"
-                                    />
-                                    <div class="invalid-feedback">{{ errors.name }}</div>
-                                  </div>
-                                </div>
-                                <div class="col-12">
-                                  <div class="mb-3">
                                     <label class="text-left">Sản phẩm</label>
                                     <span style="color: red">&nbsp;*</span>
                                     <Field
-                                        name="unitRole"
+                                        name="product"
                                         v-slot="{ field}"
                                     >
                                       <VueMultiselect
@@ -335,10 +313,11 @@ const {
   itemFilter
 } = toRefs(state);
 const schema = Yup.object().shape({
-  // userName: Yup.string().required("Tài khoản không được bỏ trống !"),
-  // name : Yup.string().required("Họ và tên không được bỏ trống !"),
-  // password : Yup.string().required("Mật khẩu không được bỏ trống !"),
-  // unitRole : Yup.mixed().required("Vai trò không được bỏ trống !"),
+  product: Yup.mixed().required("Sản phẩm không được bỏ trống !"),
+  quantityImport: Yup.number()
+      .typeError("Số lượng nhập không hợp lệ !")
+      .moreThan(0, "Số lượng nhập phải lớn hơn 0 !")
+      .required("Số lượng nhập không được bỏ trống !")
 });
 function handleClear() {
   state.itemFilter = {
@@ -359,9 +338,10 @@ async function getData() {
   };
   await proxy.$store.dispatch("khoStore/getPagingParams", params).then(res => {
     if (res != null && res.code === 0) {
-      state.list = res.data.data;
-      state.totalRows = res.data.totalRows;
-      state.numberOfElement = res.data.data.length;
+      const items = res.data?.data || [];
+      state.list = items;
+      state.totalRows = res.data?.totalRows || 0;
+      state.numberOfElement = items.length;
       state.list = state.list.map(u => {
         return {
           ...u,
@@ -388,17 +368,13 @@ async function handleGetInfo(id) {
       state.model = khoModel.getJson(res.data);
       // Tìm role phù hợp từ listSP
       state.model.product = state.listSP.find(p => p.id === res.data.productId) || null;
-      proxy.$refs.form.setFieldValue('unitRole', res.data.productId);
+      proxy.$refs.form.setFieldValue('product', state.model.product);
     }
   });
 }
 function handleShowDeleteModal(id) {
   state.model.id = id;
   proxy.showDeleteModal = true;
-}
-function handleShowResetModal(id) {
-  state.model.id = id;
-  proxy.showResetModal = true;
 }
 async function handleDelete() {
   if (state.model.id != 0 && state.model.id != null && state.model.id) {
@@ -414,7 +390,8 @@ async function handleDelete() {
   }
 }
 async function handleSubmit() {
-  state.model.productId = state.model.product.id;
+  state.model.productId = state.model.product?.id;
+  state.model.name = state.model.product?.name || "";
   if (state.model.id != 0 && state.model.id != null && state.model.id) {
     await proxy.$store.dispatch("khoStore/update", state.model).then(res => {
       if (res != null && res.code === 0) {
@@ -449,11 +426,11 @@ onMounted(() => {
   state.theModal = new Modal(document.getElementById('info_modal'));
   proxy.$refs.ref_info_modal.addEventListener('hidden.bs.modal', event => {
     state.model = khoModel.baseJson();
-    proxy.$refs.form.setFieldValue('unitRole', state.model.unitRole);
+    proxy.$refs.form.setFieldValue('product', state.model.product);
   });
   proxy.$refs.ref_delete.addEventListener('hidden.bs.modal', event => {
     state.model = khoModel.baseJson();
-    proxy.$refs.form.setFieldValue('unitRole', state.model.unitRole);
+    proxy.$refs.form.setFieldValue('product', state.model.product);
   });
 });
 getListSanPham();
